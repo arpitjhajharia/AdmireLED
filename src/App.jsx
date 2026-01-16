@@ -156,7 +156,6 @@ const App = () => {
       <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 px-4 md:px-6 h-16 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <img src="/AdmireLED/logo.png" alt="Logo" className="h-10 w-auto" />
-          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">ADMIRE <span className="text-teal-600 dark:text-teal-400 font-medium">SIGN</span></span>
         </div>
 
         <div className="flex gap-4 items-center">

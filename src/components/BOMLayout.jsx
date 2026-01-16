@@ -200,7 +200,6 @@ const BOMLayout = ({ data, allScreensData }) => {
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm font-bold text-slate-700">REF: {generateId()}</p>
                     <p className="text-xs text-slate-500">{new Date().toLocaleDateString()}</p>
                 </div>
             </div>
