@@ -62,41 +62,41 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
 
         if (item.id === 'modules') {
             return (
-                <div className="flex gap-2">
-                    <select value={selectedPitch} onChange={e => { updateScreenState('selectedPitch', e.target.value); updateScreenState('selectedModuleId', ''); }} className="w-20 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <div className="flex flex-col md:flex-row gap-2">
+                    <select value={selectedPitch} onChange={e => { updateScreenState('selectedPitch', e.target.value); updateScreenState('selectedModuleId', ''); }} className="w-full md:w-20 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                         <option value="">Pitch</option>{uniquePitches.map(p => <option key={p} value={p}>P{p}</option>)}
                     </select>
-                    <select value={selectedModuleId} onChange={e => updateScreenState('selectedModuleId', e.target.value)} disabled={!selectedPitch} className="flex-1 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50">
+                    <select value={selectedModuleId} onChange={e => updateScreenState('selectedModuleId', e.target.value)} disabled={!selectedPitch} className="w-full md:flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50">
                         <option value="">Select Module...</option>
                         {filteredModules.map(m => <option key={m.id} value={m.id}>{m.brand} {m.model} ({getStock(m.id)})</option>)}
                     </select>
                 </div>
             );
         }
-        if (item.id === 'cabinets') return <select value={selectedCabinetId} onChange={e => updateScreenState('selectedCabinetId', e.target.value)} disabled={!selectedModule} className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50"><option value="">Select Cabinet...</option>{cabinets.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({c.width}x{c.height}) - Stock: {getStock(c.id)}</option>)}</select>;
-        if (item.id === 'cards') return <select value={selectedCardId} onChange={e => updateScreenState('selectedCardId', e.target.value)} className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Card...</option>{inventory.filter(i => i.type === 'card').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
-        if (item.id === 'psu') return <select value={selectedPSUId} onChange={e => updateScreenState('selectedPSUId', e.target.value)} className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'psu').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
+        if (item.id === 'cabinets') return <select value={selectedCabinetId} onChange={e => updateScreenState('selectedCabinetId', e.target.value)} disabled={!selectedModule} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50"><option value="">Select Cabinet...</option>{cabinets.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({c.width}x{c.height}) - Stock: {getStock(c.id)}</option>)}</select>;
+        if (item.id === 'cards') return <select value={selectedCardId} onChange={e => updateScreenState('selectedCardId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Card...</option>{inventory.filter(i => i.type === 'card').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
+        if (item.id === 'psu') return <select value={selectedPSUId} onChange={e => updateScreenState('selectedPSUId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'psu').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
         if (item.id === 'processor') {
             return (
-                <div className="flex flex-col gap-1">
-                    <select value={selectedProcId} onChange={e => updateScreenState('selectedProcId', e.target.value)} className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <div className="flex flex-col gap-2 md:gap-1">
+                    <select value={selectedProcId} onChange={e => updateScreenState('selectedProcId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                         <option value="">Select Processor...</option>
                         {inventory.filter(i => i.type === 'processor').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}
                     </select>
-                    <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-green-600 font-bold">Sell:</span>
-                        <input type="number" className="w-20 p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials.processor?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, processor: { ...commercials.processor, val: e.target.value } })} />
+                    <div className="flex items-center gap-2 md:gap-1">
+                        <span className="text-xs md:text-[10px] text-green-600 font-bold">Sell:</span>
+                        <input type="number" className="flex-1 md:w-20 p-2 md:p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials.processor?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, processor: { ...commercials.processor, val: e.target.value } })} />
                     </div>
                 </div>
             );
         }
-        if (item.id === 'ready') return <select value={activeScreen.readyId} onChange={e => updateScreenState('readyId', e.target.value)} className="w-full p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Screen Model...</option>{readyUnits.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} (P{u.pitch})</option>)}</select>;
+        if (item.id === 'ready') return <select value={activeScreen.readyId} onChange={e => updateScreenState('readyId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Screen Model...</option>{readyUnits.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} (P{u.pitch})</option>)}</select>;
 
         const extraIdx = extraComponents ? extraComponents.findIndex(e => e.id === item.id) : -1;
         if (extraIdx !== -1) {
             return (
                 <div className="flex gap-1 items-center">
-                    <select value={extraComponents[extraIdx].componentId} onChange={e => { const n = [...extraComponents]; n[extraIdx].componentId = e.target.value; updateScreenState('extraComponents', n); }} className="flex-1 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    <select value={extraComponents[extraIdx].componentId} onChange={e => { const n = [...extraComponents]; n[extraIdx].componentId = e.target.value; updateScreenState('extraComponents', n); }} className="flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                         <option value="">Select...</option>
                         {['module', 'cabinet', 'card', 'psu'].map(type => {
                             const items = inventory.filter(i => i.type === type).sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model));
@@ -110,8 +110,8 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                             );
                         })}
                     </select>
-                    <select value={extraComponents[extraIdx].type} onChange={e => { const n = [...extraComponents]; n[extraIdx].type = e.target.value; updateScreenState('extraComponents', n); }} className="w-16 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="screen">/Scrn</option><option value="cabinet">/Cab</option></select>
-                    <button type="button" onClick={() => updateScreenState('extraComponents', extraComponents.filter((_, i) => i !== extraIdx))} className="text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
+                    <select value={extraComponents[extraIdx].type} onChange={e => { const n = [...extraComponents]; n[extraIdx].type = e.target.value; updateScreenState('extraComponents', n); }} className="w-16 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="screen">/Scrn</option><option value="cabinet">/Cab</option></select>
+                    <button type="button" onClick={() => updateScreenState('extraComponents', extraComponents.filter((_, i) => i !== extraIdx))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
                 </div>
             );
         }
@@ -170,7 +170,10 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
         updateScreenProp(state.activeScreenIndex, 'extras', newExtras);
     };
 
-    const renderItemRow = (item) => (
+    // --- RENDER HELPERS ---
+
+    // 1. Desktop Table Row
+    const renderDesktopRow = (item) => (
         <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${item.isOverridden ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
             <td className="p-2 pl-4">
                 <div className="flex items-center gap-2">
@@ -198,130 +201,235 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
         </tr>
     );
 
-    const renderDynamicExtraRow = (item, index) => (
-        <tr key={item.id} className="text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
-            <td className="p-2 pl-4">
-                <div className="flex items-center gap-2">
-                    <button onClick={() => handleRemoveExtra(index)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
-                    <input
-                        type="text"
-                        value={item.name}
-                        onChange={e => handleUpdateExtra(index, 'name', e.target.value)}
-                        className="text-xs border-b border-transparent hover:border-slate-300 focus:border-teal-500 bg-transparent outline-none w-full text-slate-600 dark:text-slate-300 font-medium"
-                    />
-                </div>
-            </td>
-            <td className="p-2 text-right">
-                <div className="flex items-center justify-end gap-1">
-                    <input type="number" value={item.val} onChange={e => handleUpdateExtra(index, 'val', e.target.value)} className="w-16 p-1 text-right text-xs border rounded bg-white dark:bg-slate-800 dark:border-slate-600" />
-                    <button type="button" onClick={() => handleUpdateExtra(index, 'type', item.type === 'abs' ? 'pct' : 'abs')} className="px-1 text-[10px] font-bold border rounded bg-slate-100 dark:bg-slate-700">{item.type === 'abs' ? '₹' : '%'}</button>
-                </div>
-            </td>
-            <td className="p-2 text-center border-l border-slate-100 dark:border-slate-700 text-[10px] text-slate-400">{item.type === 'pct' ? `${item.val}%` : '-'}</td>
-            <td className="p-2 text-right">{formatCurrency(getExtraCost(item.id), 'INR', false)}</td>
-            <td className="p-2 text-right border-l border-slate-100 dark:border-slate-700">{formatCurrency(getExtraCost(item.id) * screenQty, 'INR', false)}</td>
-        </tr>
-    );
+    // 2. Mobile Card Row (NEW)
+    const renderMobileRow = (item) => (
+        <div key={item.id} className={`bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm ${item.isOverridden ? 'ring-1 ring-amber-400 bg-amber-50 dark:bg-amber-900/10' : ''}`}>
+            <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold uppercase text-slate-500">{item.name}</span>
+                {calculation && (
+                    <div className="flex gap-2">
+                        <button type="button" onClick={() => setEditingRow(editingRow === item.id ? null : item.id)} className={`p-1 rounded ${editingRow === item.id ? 'bg-teal-100 text-teal-700' : 'text-slate-300 hover:text-teal-600'}`}><Edit size={14} /></button>
+                        {item.isOverridden && <button type="button" onClick={() => onClearOverride(item.id)} className="text-amber-500 hover:text-red-500"><RefreshCw size={14} /></button>}
+                    </div>
+                )}
+            </div>
 
-    const renderServiceRow = (sellKey, label, costKey = sellKey) => (
-        <tr key={sellKey} className="text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-            <td className="p-2 pl-4">
-                <div className="flex flex-col gap-1">
-                    <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium">{label}</span>
-                        <select value={commercials[sellKey]?.unit || 'sqft'} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], unit: e.target.value } })} className="text-[10px] p-0.5 border rounded bg-slate-50 dark:bg-slate-700"><option value="sqft">/Sq.Ft</option><option value="screen">/Screen</option></select>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-green-600 font-bold">Sell:</span>
-                        <input type="number" className="w-20 p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials[sellKey]?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], val: e.target.value } })} />
-                    </div>
+            <div className="mb-3">
+                {renderComponentCell(item)}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs bg-slate-50 dark:bg-slate-700/50 p-2 rounded">
+                <div>
+                    <span className="block text-[9px] uppercase text-slate-400 font-bold mb-1">Rate</span>
+                    {editingRow === item.id ? (
+                        <input type="number" className="w-full p-1 text-right text-xs border rounded" value={overrides[item.id]?.rate ?? item.unit} onChange={e => onOverride(item.id, 'rate', e.target.value)} />
+                    ) : (
+                        <span className="block font-medium dark:text-slate-200">{formatCurrency(item.unit, 'INR', false)}</span>
+                    )}
                 </div>
-            </td>
-            <td className="p-2 text-right">
-                <div className="flex items-center justify-end gap-1">
-                    <span className="text-[10px] text-slate-400 mr-1">Cost:</span>
-                    <input
-                        type="number"
-                        value={commercials[sellKey]?.cost || 0}
-                        onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], cost: e.target.value } })}
-                        className="w-16 p-1 text-right text-xs border rounded bg-white dark:bg-slate-800 dark:border-slate-600"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], costType: commercials[sellKey]?.costType === 'abs' ? 'pct' : 'abs' } })}
-                        className="px-1 text-[10px] font-bold border rounded bg-slate-100 dark:bg-slate-700"
-                    >
-                        {commercials[sellKey]?.costType === 'abs' ? '₹' : '%'}
-                    </button>
+                <div className="text-center border-l border-slate-200 dark:border-slate-600">
+                    <span className="block text-[9px] uppercase text-slate-400 font-bold mb-1">Qty</span>
+                    {editingRow === item.id ? (
+                        <input type="number" className="w-full p-1 text-center text-xs border rounded" value={overrides[item.id]?.qty ?? item.qty} onChange={e => onOverride(item.id, 'qty', e.target.value)} />
+                    ) : (
+                        <span className="block font-medium dark:text-slate-200">{item.qty}</span>
+                    )}
                 </div>
-            </td>
-            <td className="p-2 text-center border-l border-slate-100 dark:border-slate-700 text-xs">
-                {commercials[sellKey]?.unit === 'sqft' ? calculation?.matrix.sqft.perScreen.toFixed(1) || '-' : '1'}
-            </td>
-            <td className="p-2 text-right">{formatCurrency(getExtraCost(costKey), 'INR', false)}</td>
-            <td className="p-2 text-right border-l border-slate-100 dark:border-slate-700">{formatCurrency(getExtraCost(costKey) * screenQty, 'INR', false)}</td>
-        </tr>
+                <div className="text-right border-l border-slate-200 dark:border-slate-600">
+                    <span className="block text-[9px] uppercase text-slate-400 font-bold mb-1">Total</span>
+                    <span className="block font-bold text-teal-600 dark:text-teal-400">{formatCurrency(item.total * screenQty, 'INR', false)}</span>
+                </div>
+            </div>
+        </div>
     );
 
     return (
-        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
-            <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
-                        <th className="p-2">Component Selection</th>
-                        <th className="p-2 text-right">Rate (Cost)</th>
-                        <th className="p-2 text-center border-l border-slate-200 dark:border-slate-700">Qty/Scrn</th>
-                        <th className="p-2 text-right">Cost/Scrn</th>
-                        <th className="p-2 text-right border-l border-slate-200 dark:border-slate-700">Total Cost</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                    <tr className="bg-slate-50 dark:bg-slate-800/50"><td colSpan="5" className="p-2 font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider text-[10px]">A. LED Panel & Logistics</td></tr>
-                    {ledItems.map(renderItemRow)}
-                    <tr className="bg-white dark:bg-slate-900">
-                        <td colSpan="5" className="p-2 text-center">
-                            <button type="button" onClick={() => updateScreenProp(state.activeScreenIndex, 'extraComponents', [...(extraComponents || []), { id: safeGenId(), componentId: '', qty: 1, type: 'screen' }])} className="text-[10px] text-teal-600 hover:underline flex items-center justify-center gap-1 w-full"><Plus size={10} /> Add Component to Panel</button>
-                        </td>
-                    </tr>
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
 
-                    {(Array.isArray(extras) ? extras : []).map((item, idx) => renderDynamicExtraRow(item, idx))}
-                    <tr className="bg-slate-50 dark:bg-slate-800/20">
-                        <td colSpan="5" className="p-1 text-center">
-                            <button onClick={handleAddExtra} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider flex items-center justify-center gap-1 py-1 w-full hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors">
-                                <Plus size={10} /> Add Extra Cost
-                            </button>
-                        </td>
-                    </tr>
+            {/* --- DESKTOP VIEW (Table) --- */}
+            <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                            <th className="p-2">Component Selection</th>
+                            <th className="p-2 text-right">Rate (Cost)</th>
+                            <th className="p-2 text-center border-l border-slate-200 dark:border-slate-700">Qty/Scrn</th>
+                            <th className="p-2 text-right">Cost/Scrn</th>
+                            <th className="p-2 text-right border-l border-slate-200 dark:border-slate-700">Total Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        <tr className="bg-slate-50 dark:bg-slate-800/50"><td colSpan="5" className="p-2 font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider text-[10px]">A. LED Panel & Logistics</td></tr>
+                        {ledItems.map(renderDesktopRow)}
+                        <tr className="bg-white dark:bg-slate-900">
+                            <td colSpan="5" className="p-2 text-center">
+                                <button type="button" onClick={() => updateScreenProp(state.activeScreenIndex, 'extraComponents', [...(extraComponents || []), { id: safeGenId(), componentId: '', qty: 1, type: 'screen' }])} className="text-[10px] text-teal-600 hover:underline flex items-center justify-center gap-1 w-full"><Plus size={10} /> Add Component to Panel</button>
+                            </td>
+                        </tr>
 
-                    <tr className="bg-teal-50 dark:bg-teal-900/20 font-bold border-t border-teal-100 dark:border-teal-800">
-                        <td className="p-2 text-right text-teal-800 dark:text-teal-300">Sub-total (LED Panel)</td>
-                        <td className="p-2 text-right text-teal-700 dark:text-teal-400 text-[10px] font-normal">{formatCurrency(ledPanelPerSqFt, 'INR')}/sqft</td>
-                        <td className="p-2 text-center border-l border-teal-100 dark:border-teal-800">-</td>
-                        <td className="p-2 text-right text-teal-800 dark:text-teal-300">{formatCurrency(ledPanelPerScreen, 'INR', false)}</td>
-                        <td className="p-2 text-right text-teal-800 dark:text-teal-300 border-l border-teal-100 dark:border-teal-800">{formatCurrency(ledPanelSubtotal, 'INR', false)}</td>
-                    </tr>
+                        {(Array.isArray(extras) ? extras : []).map((item, idx) => (
+                            <tr key={item.id} className="text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 group">
+                                <td className="p-2 pl-4">
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleRemoveExtra(idx)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
+                                        <input type="text" value={item.name} onChange={e => handleUpdateExtra(idx, 'name', e.target.value)} className="text-xs border-b border-transparent hover:border-slate-300 focus:border-teal-500 bg-transparent outline-none w-full text-slate-600 dark:text-slate-300 font-medium" />
+                                    </div>
+                                </td>
+                                <td className="p-2 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <input type="number" value={item.val} onChange={e => handleUpdateExtra(idx, 'val', e.target.value)} className="w-16 p-1 text-right text-xs border rounded bg-white dark:bg-slate-800 dark:border-slate-600" />
+                                        <button type="button" onClick={() => handleUpdateExtra(idx, 'type', item.type === 'abs' ? 'pct' : 'abs')} className="px-1 text-[10px] font-bold border rounded bg-slate-100 dark:bg-slate-700">{item.type === 'abs' ? '₹' : '%'}</button>
+                                    </div>
+                                </td>
+                                <td className="p-2 text-center border-l border-slate-100 dark:border-slate-700 text-[10px] text-slate-400">{item.type === 'pct' ? `${item.val}%` : '-'}</td>
+                                <td className="p-2 text-right">{formatCurrency(getExtraCost(item.id), 'INR', false)}</td>
+                                <td className="p-2 text-right border-l border-slate-100 dark:border-slate-700">{formatCurrency(getExtraCost(item.id) * screenQty, 'INR', false)}</td>
+                            </tr>
+                        ))}
+                        <tr className="bg-slate-50 dark:bg-slate-800/20">
+                            <td colSpan="5" className="p-1 text-center">
+                                <button onClick={handleAddExtra} className="text-[10px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-wider flex items-center justify-center gap-1 py-1 w-full hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"><Plus size={10} /> Add Extra Cost</button>
+                            </td>
+                        </tr>
 
-                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700"><td colSpan="5" className="p-2 font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider text-[10px]">B. Additional Costs</td></tr>
-                    {serviceItems.map(renderItemRow)}
-                    {renderServiceRow('installation', 'Installation', 'install')}
-                    {renderServiceRow('structure', 'Structure', 'structure')}
-                    <tr className="bg-blue-50 dark:bg-blue-900/20 font-bold border-t border-blue-100 dark:border-blue-800">
-                        <td className="p-2 text-right text-blue-800 dark:text-blue-300">Sub-total (Additional)</td>
-                        <td className="p-2 text-right text-blue-700 dark:text-blue-400 text-[10px] font-normal">{formatCurrency(additionalPerSqFt, 'INR')}/sqft</td>
-                        <td className="p-2 text-center border-l border-blue-100 dark:border-blue-800">-</td>
-                        <td className="p-2 text-right text-blue-800 dark:text-blue-300">{formatCurrency(additionalPerScreen, 'INR', false)}</td>
-                        <td className="p-2 text-right text-blue-800 dark:text-blue-300 border-l border-blue-100 dark:border-blue-800">{formatCurrency(additionalSubtotal, 'INR', false)}</td>
-                    </tr>
+                        <tr className="bg-teal-50 dark:bg-teal-900/20 font-bold border-t border-teal-100 dark:border-teal-800">
+                            <td className="p-2 text-right text-teal-800 dark:text-teal-300">Sub-total (LED Panel)</td>
+                            <td className="p-2 text-right text-teal-700 dark:text-teal-400 text-[10px] font-normal">{formatCurrency(ledPanelPerSqFt, 'INR')}/sqft</td>
+                            <td className="p-2 text-center border-l border-teal-100 dark:border-teal-800">-</td>
+                            <td className="p-2 text-right text-teal-800 dark:text-teal-300">{formatCurrency(ledPanelPerScreen, 'INR', false)}</td>
+                            <td className="p-2 text-right text-teal-800 dark:text-teal-300 border-l border-teal-100 dark:border-teal-800">{formatCurrency(ledPanelSubtotal, 'INR', false)}</td>
+                        </tr>
 
-                    <tr className="bg-slate-800 text-white font-bold border-t-2 border-slate-900 text-sm">
-                        <td className="p-3 text-right uppercase">Grand Total (Cost)</td>
-                        <td className="p-3 text-right text-slate-300 text-xs font-normal">{formatCurrency(grandTotalPerSqFt, 'INR')}/sqft</td>
-                        <td className="p-3 text-center border-l border-slate-600">-</td>
-                        <td className="p-3 text-right border-l border-slate-600">{formatCurrency(grandTotalPerScreen, 'INR', false)}</td>
-                        <td className="p-3 text-right border-l border-slate-600">{formatCurrency(grandTotal, 'INR', false)}</td>
-                    </tr>
-                </tbody>
-            </table>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700"><td colSpan="5" className="p-2 font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider text-[10px]">B. Additional Costs</td></tr>
+                        {serviceItems.map(renderDesktopRow)}
+                        {/* Service Rows - Installation etc. */}
+                        {['installation', 'structure'].map(sellKey => {
+                            const costKey = sellKey === 'installation' ? 'install' : 'structure';
+                            const label = sellKey === 'installation' ? 'Installation' : 'Structure';
+                            return (
+                                <tr key={sellKey} className="text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <td className="p-2 pl-4">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-medium">{label}</span>
+                                                <select value={commercials[sellKey]?.unit || 'sqft'} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], unit: e.target.value } })} className="text-[10px] p-0.5 border rounded bg-slate-50 dark:bg-slate-700"><option value="sqft">/Sq.Ft</option><option value="screen">/Screen</option></select>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[10px] text-green-600 font-bold">Sell:</span>
+                                                <input type="number" className="w-20 p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials[sellKey]?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], val: e.target.value } })} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-2 text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <span className="text-[10px] text-slate-400 mr-1">Cost:</span>
+                                            <input type="number" value={commercials[sellKey]?.cost || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], cost: e.target.value } })} className="w-16 p-1 text-right text-xs border rounded bg-white dark:bg-slate-800 dark:border-slate-600" />
+                                            <button type="button" onClick={() => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], costType: commercials[sellKey]?.costType === 'abs' ? 'pct' : 'abs' } })} className="px-1 text-[10px] font-bold border rounded bg-slate-100 dark:bg-slate-700">{commercials[sellKey]?.costType === 'abs' ? '₹' : '%'}</button>
+                                        </div>
+                                    </td>
+                                    <td className="p-2 text-center border-l border-slate-100 dark:border-slate-700 text-xs">{commercials[sellKey]?.unit === 'sqft' ? calculation?.matrix.sqft.perScreen.toFixed(1) || '-' : '1'}</td>
+                                    <td className="p-2 text-right">{formatCurrency(getExtraCost(costKey), 'INR', false)}</td>
+                                    <td className="p-2 text-right border-l border-slate-100 dark:border-slate-700">{formatCurrency(getExtraCost(costKey) * screenQty, 'INR', false)}</td>
+                                </tr>
+                            );
+                        })}
+                        <tr className="bg-blue-50 dark:bg-blue-900/20 font-bold border-t border-blue-100 dark:border-blue-800">
+                            <td className="p-2 text-right text-blue-800 dark:text-blue-300">Sub-total (Additional)</td>
+                            <td className="p-2 text-right text-blue-700 dark:text-blue-400 text-[10px] font-normal">{formatCurrency(additionalPerSqFt, 'INR')}/sqft</td>
+                            <td className="p-2 text-center border-l border-blue-100 dark:border-blue-800">-</td>
+                            <td className="p-2 text-right text-blue-800 dark:text-blue-300">{formatCurrency(additionalPerScreen, 'INR', false)}</td>
+                            <td className="p-2 text-right text-blue-800 dark:text-blue-300 border-l border-blue-100 dark:border-blue-800">{formatCurrency(additionalSubtotal, 'INR', false)}</td>
+                        </tr>
+
+                        <tr className="bg-slate-800 text-white font-bold border-t-2 border-slate-900 text-sm">
+                            <td className="p-3 text-right uppercase">Grand Total (Cost)</td>
+                            <td className="p-3 text-right text-slate-300 text-xs font-normal">{formatCurrency(grandTotalPerSqFt, 'INR')}/sqft</td>
+                            <td className="p-3 text-center border-l border-slate-600">-</td>
+                            <td className="p-3 text-right border-l border-slate-600">{formatCurrency(grandTotalPerScreen, 'INR', false)}</td>
+                            <td className="p-3 text-right border-l border-slate-600">{formatCurrency(grandTotal, 'INR', false)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {/* --- MOBILE VIEW (Cards) --- */}
+            <div className="md:hidden bg-slate-50 dark:bg-slate-800/20 p-3">
+                <div className="mb-2 font-bold text-teal-700 text-xs uppercase tracking-wider">A. LED Panel & Logistics</div>
+                {ledItems.map(renderMobileRow)}
+                <button type="button" onClick={() => updateScreenProp(state.activeScreenIndex, 'extraComponents', [...(extraComponents || []), { id: safeGenId(), componentId: '', qty: 1, type: 'screen' }])} className="w-full py-2 mb-4 bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-700 text-teal-600 dark:text-teal-400 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><Plus size={14} /> Add Component</button>
+
+                {(Array.isArray(extras) ? extras : []).map((item, idx) => (
+                    <div key={item.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm flex items-center justify-between">
+                        <div className="flex-1">
+                            <input type="text" value={item.name} onChange={e => handleUpdateExtra(idx, 'name', e.target.value)} className="text-xs font-bold border-b border-transparent focus:border-teal-500 bg-transparent outline-none w-full text-slate-600 dark:text-slate-300" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input type="number" value={item.val} onChange={e => handleUpdateExtra(idx, 'val', e.target.value)} className="w-12 p-1 text-right text-xs border rounded bg-slate-50 dark:bg-slate-700" />
+                            <button type="button" onClick={() => handleUpdateExtra(idx, 'type', item.type === 'abs' ? 'pct' : 'abs')} className="px-1 text-[10px] font-bold border rounded bg-slate-100 dark:bg-slate-600">{item.type === 'abs' ? '₹' : '%'}</button>
+                            <button onClick={() => handleRemoveExtra(idx)} className="text-red-400 p-1"><Trash2 size={14} /></button>
+                        </div>
+                    </div>
+                ))}
+                <button onClick={handleAddExtra} className="w-full py-2 mb-4 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><Plus size={14} /> Add Overhead Cost</button>
+
+                <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg border border-teal-100 dark:border-teal-800 mb-6">
+                    <div className="flex justify-between items-center text-xs font-bold text-teal-800 dark:text-teal-300">
+                        <span>Sub-total (LED Panel)</span>
+                        <span>{formatCurrency(ledPanelSubtotal, 'INR', false)}</span>
+                    </div>
+                    <div className="text-[10px] text-right text-teal-600 dark:text-teal-400 mt-1">
+                        {formatCurrency(ledPanelPerSqFt, 'INR')}/sqft
+                    </div>
+                </div>
+
+                <div className="mb-2 font-bold text-blue-700 text-xs uppercase tracking-wider">B. Additional Costs</div>
+                {serviceItems.map(renderMobileRow)}
+                {/* Mobile Service Rows */}
+                {['installation', 'structure'].map(sellKey => {
+                    const costKey = sellKey === 'installation' ? 'install' : 'structure';
+                    const label = sellKey === 'installation' ? 'Installation' : 'Structure';
+                    return (
+                        <div key={sellKey} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-bold uppercase text-slate-500">{label}</span>
+                                <select value={commercials[sellKey]?.unit || 'sqft'} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], unit: e.target.value } })} className="text-[10px] p-0.5 border rounded bg-slate-50 dark:bg-slate-700"><option value="sqft">/Sq.Ft</option><option value="screen">/Screen</option></select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mb-2">
+                                <div className="flex items-center gap-1 bg-green-50 p-1 rounded border border-green-100">
+                                    <span className="text-[10px] text-green-600 font-bold">Sell:</span>
+                                    <input type="number" className="w-full p-0.5 text-xs bg-transparent outline-none text-green-800 font-bold" value={commercials[sellKey]?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], val: e.target.value } })} />
+                                </div>
+                                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded border border-slate-100">
+                                    <span className="text-[10px] text-slate-400">Cost:</span>
+                                    <input type="number" className="w-full p-0.5 text-xs bg-transparent outline-none" value={commercials[sellKey]?.cost || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], cost: e.target.value } })} />
+                                    <button type="button" onClick={() => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], costType: commercials[sellKey]?.costType === 'abs' ? 'pct' : 'abs' } })} className="px-1 text-[10px] font-bold">{commercials[sellKey]?.costType === 'abs' ? '₹' : '%'}</button>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
+                                <span className="text-[10px] text-slate-400 font-bold">Total Cost</span>
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formatCurrency(getExtraCost(costKey) * screenQty, 'INR', false)}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 mb-6">
+                    <div className="flex justify-between items-center text-xs font-bold text-blue-800 dark:text-blue-300">
+                        <span>Sub-total (Additional)</span>
+                        <span>{formatCurrency(additionalSubtotal, 'INR', false)}</span>
+                    </div>
+                </div>
+
+                <div className="bg-slate-900 p-4 rounded-lg text-white shadow-lg">
+                    <div className="flex justify-between items-end mb-1">
+                        <span className="text-xs uppercase text-slate-400 font-bold">Grand Total (Cost)</span>
+                        <span className="text-lg font-bold">{formatCurrency(grandTotal, 'INR', false)}</span>
+                    </div>
+                    <div className="text-[10px] text-right text-slate-500">
+                        {formatCurrency(grandTotalPerSqFt, 'INR')}/sqft
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
@@ -679,7 +787,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                     </div>
 
                     <div className="p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="relative group">
                                 <label className="absolute -top-1.5 left-2 bg-white dark:bg-slate-800 px-1 text-[10px] font-bold text-teal-600 dark:text-teal-400">CLIENT</label>
                                 <input value={client} onChange={e => updateState('client', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 dark:text-white transition-all" placeholder="Client Name" />
@@ -716,7 +824,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-12 gap-2 mb-1 px-2 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                            <div className="grid grid-cols-4 md:grid-cols-12 gap-2 mb-1 px-2 text-[9px] font-bold text-slate-400 uppercase tracking-wider hidden md:grid">
                                 <div className="col-span-1 text-center">#</div>
                                 <div className="col-span-3">Width ({unit})</div>
                                 <div className="col-span-3">Height ({unit})</div>
@@ -730,12 +838,13 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                     <div
                                         key={screen.id}
                                         onClick={() => updateState('activeScreenIndex', index)}
-                                        className={`grid grid-cols-12 gap-2 items-center p-1.5 rounded border transition-all cursor-pointer ${state.activeScreenIndex === index
+                                        className={`grid grid-cols-4 md:grid-cols-12 gap-2 gap-y-3 items-center p-2 rounded border transition-all cursor-pointer ${state.activeScreenIndex === index
                                                 ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20 shadow-sm ring-1 ring-teal-500/20'
                                                 : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-teal-300'
                                             }`}
                                     >
-                                        <div className="col-span-1 flex justify-center">
+                                        <div className="col-span-4 md:col-span-1 flex justify-between md:justify-center border-b md:border-b-0 pb-1 md:pb-0 mb-1 md:mb-0">
+                                            <span className="md:hidden text-xs font-bold text-slate-500">Config #</span>
                                             <span className={`flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${state.activeScreenIndex === index
                                                     ? 'bg-teal-600 text-white'
                                                     : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -743,19 +852,19 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                                 {index + 1}
                                             </span>
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2 md:col-span-3">
                                             <input type="number" placeholder="W" value={screen.targetWidth} onChange={e => updateScreenProp(index, 'targetWidth', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2 md:col-span-3">
                                             <input type="number" placeholder="H" value={screen.targetHeight} onChange={e => updateScreenProp(index, 'targetHeight', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-2 md:col-span-2">
                                             <input type="number" min="0" value={screen.screenQty} onChange={e => updateScreenProp(index, 'screenQty', Math.max(0, parseInt(e.target.value)) || 0)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-bold text-center focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-2 md:col-span-2">
                                             <select value={screen.sizingMode} onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)} className="w-full py-0.5 px-1 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-[10px] focus:border-teal-500 outline-none"><option value="closest">Auto</option><option value="up">Up</option><option value="down">Down</option></select>
                                         </div>
-                                        <div className="col-span-1 flex justify-end gap-1">
+                                        <div className="col-span-4 md:col-span-1 flex justify-end gap-1 border-t md:border-t-0 pt-2 md:pt-0 mt-1 md:mt-0">
                                             <button onClick={(e) => { e.stopPropagation(); duplicateScreen(index); }} className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" title="Duplicate"><Copy size={12} /></button>
                                             {state.screens.length > 1 && (<button onClick={(e) => { e.stopPropagation(); removeScreen(index); }} className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400" title="Remove"><Trash2 size={12} /></button>)}
                                         </div>
