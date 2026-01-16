@@ -798,7 +798,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="flex items-center border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden h-8">
                                 <div className="bg-slate-100 dark:bg-slate-700 px-3 h-full flex items-center border-r border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase w-20 justify-center">Type</div>
                                 <div className="flex-1 flex p-0.5 bg-slate-50 dark:bg-slate-800 h-full">
@@ -837,36 +837,119 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                 {state.screens.map((screen, index) => (
                                     <div
                                         key={screen.id}
-                                        onClick={() => updateState('activeScreenIndex', index)}
-                                        className={`grid grid-cols-4 md:grid-cols-12 gap-2 gap-y-3 items-center p-2 rounded border transition-all cursor-pointer ${state.activeScreenIndex === index
-                                                ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20 shadow-sm ring-1 ring-teal-500/20'
-                                                : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-teal-300'
-                                            }`}
+                                        onClick={() => setState({ ...state, activeScreenIndex: index })}
+                                        className={`grid grid-cols-4 md:grid-cols-12 gap-3 items-start p-3 rounded-lg border transition-all cursor-pointer ${state.activeScreenIndex === index ? 'border-teal-500 ring-1 ring-teal-500 bg-teal-50/50 dark:bg-teal-900/10' : 'border-slate-200 dark:border-slate-700 hover:border-teal-300'}`}
                                     >
-                                        <div className="col-span-4 md:col-span-1 flex justify-between md:justify-center border-b md:border-b-0 pb-1 md:pb-0 mb-1 md:mb-0">
-                                            <span className="md:hidden text-xs font-bold text-slate-500">Config #</span>
-                                            <span className={`flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${state.activeScreenIndex === index
-                                                    ? 'bg-teal-600 text-white'
-                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                                }`}>
-                                                {index + 1}
-                                            </span>
+                                        {/* 1. Header: Index & Mobile Actions */}
+                                        <div className="col-span-4 md:col-span-1 flex justify-between md:justify-center items-center border-b md:border-b-0 pb-2 md:pb-0 mb-1 md:mb-0">
+                                            <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">#{index + 1}</span>
+
+                                            {/* Mobile Actions (Moved to Top) */}
+                                            <div className="md:hidden flex gap-3">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const n = [...state.screens];
+                                                        const newId = Math.random().toString(36).substr(2, 9);
+                                                        n.splice(index + 1, 0, { ...n[index], id: newId });
+                                                        setState({ ...state, screens: n, activeScreenIndex: index + 1 });
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded"
+                                                >
+                                                    <Copy size={16} />
+                                                </button>
+                                                {state.screens.length > 1 && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const n = state.screens.filter((_, i) => i !== index);
+                                                            setState({ ...state, screens: n, activeScreenIndex: Math.max(0, index - 1) });
+                                                        }}
+                                                        className="text-red-400 hover:text-red-600 bg-red-50 p-1.5 rounded"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* 2. Width Input */}
                                         <div className="col-span-2 md:col-span-3">
-                                            <input type="number" placeholder="W" value={screen.targetWidth} onChange={e => updateScreenProp(index, 'targetWidth', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
+                                            <label className="md:hidden text-[10px] font-bold text-slate-400 mb-1 block uppercase">Width ({state.unit})</label>
+                                            <input
+                                                type="number"
+                                                value={screen.targetWidth}
+                                                onChange={e => updateScreenProp(index, 'targetWidth', e.target.value)}
+                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
+                                                placeholder="W"
+                                            />
                                         </div>
+
+                                        {/* 3. Height Input */}
                                         <div className="col-span-2 md:col-span-3">
-                                            <input type="number" placeholder="H" value={screen.targetHeight} onChange={e => updateScreenProp(index, 'targetHeight', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
+                                            <label className="md:hidden text-[10px] font-bold text-slate-400 mb-1 block uppercase">Height ({state.unit})</label>
+                                            <input
+                                                type="number"
+                                                value={screen.targetHeight}
+                                                onChange={e => updateScreenProp(index, 'targetHeight', e.target.value)}
+                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
+                                                placeholder="H"
+                                            />
                                         </div>
+
+                                        {/* 4. Qty Input */}
                                         <div className="col-span-2 md:col-span-2">
-                                            <input type="number" min="0" value={screen.screenQty} onChange={e => updateScreenProp(index, 'screenQty', Math.max(0, parseInt(e.target.value)) || 0)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-bold text-center focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
+                                            <label className="md:hidden text-[10px] font-bold text-slate-400 mb-1 block uppercase">Qty</label>
+                                            <input
+                                                type="number"
+                                                value={screen.screenQty}
+                                                onChange={e => updateScreenProp(index, 'screenQty', e.target.value)}
+                                                className="w-full p-2 text-center text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
+                                                placeholder="Qty"
+                                            />
                                         </div>
+
+                                        {/* 5. Sizing Dropdown */}
                                         <div className="col-span-2 md:col-span-2">
-                                            <select value={screen.sizingMode} onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)} className="w-full py-0.5 px-1 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-[10px] focus:border-teal-500 outline-none"><option value="closest">Auto</option><option value="up">Up</option><option value="down">Down</option></select>
+                                            <label className="md:hidden text-[10px] font-bold text-slate-400 mb-1 block uppercase">Sizing</label>
+                                            <select
+                                                value={screen.sizingMode}
+                                                onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)}
+                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white bg-white outline-none"
+                                            >
+                                                <option value="closest">Auto</option>
+                                                <option value="exact">Exact</option>
+                                            </select>
                                         </div>
-                                        <div className="col-span-4 md:col-span-1 flex justify-end gap-1 border-t md:border-t-0 pt-2 md:pt-0 mt-1 md:mt-0">
-                                            <button onClick={(e) => { e.stopPropagation(); duplicateScreen(index); }} className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" title="Duplicate"><Copy size={12} /></button>
-                                            {state.screens.length > 1 && (<button onClick={(e) => { e.stopPropagation(); removeScreen(index); }} className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400" title="Remove"><Trash2 size={12} /></button>)}
+
+                                        {/* 6. Desktop Actions (Hidden on Mobile) */}
+                                        <div className="hidden md:flex col-span-1 justify-end gap-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const n = [...state.screens];
+                                                    const newId = Math.random().toString(36).substr(2, 9);
+                                                    n.splice(index + 1, 0, { ...n[index], id: newId });
+                                                    setState({ ...state, screens: n, activeScreenIndex: index + 1 });
+                                                }}
+                                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                                title="Duplicate"
+                                            >
+                                                <Copy size={14} />
+                                            </button>
+                                            {state.screens.length > 1 && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const n = state.screens.filter((_, i) => i !== index);
+                                                        setState({ ...state, screens: n, activeScreenIndex: Math.max(0, index - 1) });
+                                                    }}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                    title="Remove"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -906,8 +989,8 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                                 key={screen.id}
                                                 onClick={() => updateState('activeScreenIndex', index)}
                                                 className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isActive
-                                                        ? 'bg-teal-600 text-white shadow-lg'
-                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                    ? 'bg-teal-600 text-white shadow-lg'
+                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
