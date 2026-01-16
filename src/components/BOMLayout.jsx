@@ -179,21 +179,24 @@ const BOMLayout = ({ data, allScreensData }) => {
     const renderContent = (isPrintVersion) => (
         <div className={`p-8 max-w-[210mm] mx-auto bg-white min-h-screen text-slate-800 font-sans text-xs ${isPrintVersion ? 'print-version-container p-0 w-full' : ''}`}>
             <div className="flex justify-between items-start mb-6 border-b-2 border-slate-800 pb-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">Bill of Materials</h1>
-                    <div className="mt-2 space-y-1">
-                        <p className="text-sm font-bold text-slate-700">Project: <span className="font-normal">{projectName}</span></p>
-                        <p className="text-sm font-bold text-slate-700">Client: <span className="font-normal">{clientName}</span></p>
-                        {isMultiScreen && (
-                            <p className="text-sm font-bold text-slate-700">
-                                Configurations: <span className="font-normal">{allScreensData.calculations.length} screen types • {allScreensData.totalScreenQty} total screens</span>
-                            </p>
-                        )}
-                        {!isMultiScreen && data.moduleType && (
-                            <p className="text-sm font-bold text-slate-700">
-                                Specs: <span className="font-normal">P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'} • {data.finalWidth}m x {data.finalHeight}m • Qty: {data.screenQty}</span>
-                            </p>
-                        )}
+                <div className="flex items-center gap-4">
+                    <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">Bill of Materials</h1>
+                        <div className="mt-1 space-y-0.5">
+                            <p className="text-sm font-bold text-slate-700">Project: <span className="font-normal">{projectName}</span></p>
+                            <p className="text-sm font-bold text-slate-700">Client: <span className="font-normal">{clientName}</span></p>
+                            {isMultiScreen && (
+                                <p className="text-xs text-slate-500 mt-1">
+                                    {allScreensData.calculations.length} Configs • {allScreensData.totalScreenQty} Screens
+                                </p>
+                            )}
+                            {!isMultiScreen && data.moduleType && (
+                                <p className="text-xs text-slate-500 mt-1">
+                                    P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'} • {data.finalWidth}m x {data.finalHeight}m • Qty: {data.screenQty}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="text-right">

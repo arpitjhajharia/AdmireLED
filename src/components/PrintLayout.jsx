@@ -24,18 +24,16 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
 
             {/* Header */}
             <div className="flex justify-between items-start mb-6 border-b-2 border-slate-800 pb-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{CONFIG.COMPANY.NAME}</h1>
-                    <div className="text-[10px] text-slate-600 mt-1 space-y-0.5">
-                        <p>{CONFIG.COMPANY.ADDRESS_1}</p>
-                        <p>{CONFIG.COMPANY.ADDRESS_2}</p>
-                        <p>Email: {CONFIG.COMPANY.EMAIL} | Web: {CONFIG.COMPANY.WEB}</p>
+                <div className="flex gap-4 items-center">
+                    <img src="/logo.png" alt="Company Logo" className="h-16 w-auto object-contain" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{CONFIG.COMPANY.NAME}</h1>
+                        <div className="text-[10px] text-slate-600 mt-1 space-y-0.5">
+                            <p>{CONFIG.COMPANY.ADDRESS_1}</p>
+                            <p>{CONFIG.COMPANY.ADDRESS_2}</p>
+                            <p>Email: {CONFIG.COMPANY.EMAIL} | Web: {CONFIG.COMPANY.WEB}</p>
+                        </div>
                     </div>
-                </div>
-                <div className="text-right">
-                    <h2 className="text-xl font-light text-slate-500">QUOTATION</h2>
-                    <p className="text-sm font-bold text-slate-700">Date: {date || new Date().toLocaleDateString()}</p>
-                    {isMultiScreen && <p className="text-xs text-slate-500 mt-1">Consolidated Quote</p>}
                 </div>
             </div>
 
