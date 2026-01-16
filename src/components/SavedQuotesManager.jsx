@@ -144,7 +144,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${safeProject.replace(/[^a-z0-9]/gi, '_')}_BOM.csv`;
+        a.download = `${safeClient.replace(/[^a-z0-9]/gi, '_')}_${safeProject.replace(/[^a-z0-9]/gi, '_')}_BOM.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
     };
@@ -158,7 +158,12 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                             <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Eye size={20} /> View Saved Quote</h2>
                             <div className="flex gap-2">
                                 <button onClick={() => setViewQuote(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded">Close</button>
-                                <button onClick={() => window.print()} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2"><Printer size={16} /> Print / PDF</button>
+                                <button onClick={() => {
+                                    const originalTitle = document.title;
+                                    document.title = `${viewQuote.client}_${viewQuote.project}_Quote`.replace(/[^a-zA-Z0-9_]/g, '_');
+                                    window.print();
+                                    document.title = originalTitle;
+                                }} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2"><Printer size={16} /> Print / PDF</button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto p-8 bg-slate-200">

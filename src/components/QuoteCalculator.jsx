@@ -680,7 +680,12 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={() => setShowBOM(false)} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-sm font-bold">Close</button>
-                                <button onClick={() => window.print()} className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded flex items-center gap-2 text-sm font-bold"><Printer size={16} /> Print</button>
+                                <button onClick={() => {
+                                    const originalTitle = document.title;
+                                    document.title = `${client}_${project}_BOM`.replace(/[^a-zA-Z0-9_]/g, '_');
+                                    window.print();
+                                    document.title = originalTitle;
+                                }} className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-700 rounded flex items-center gap-2 text-sm font-bold"><Printer size={16} /> Print</button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-800 p-8 flex justify-center">
@@ -709,7 +714,12 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                             <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Eye size={20} /> Print Preview</h2>
                             <div className="flex gap-2">
                                 <button onClick={() => setShowPreview(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded">Close</button>
-                                <button onClick={() => window.print()} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2"><Printer size={16} /> Print / Save PDF</button>
+                                <button onClick={() => {
+                                    const originalTitle = document.title;
+                                    document.title = `${client}_${project}_Quote`.replace(/[^a-zA-Z0-9_]/g, '_');
+                                    window.print();
+                                    document.title = originalTitle;
+                                }} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2"><Printer size={16} /> Print / Save PDF</button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto p-8 bg-slate-200">
