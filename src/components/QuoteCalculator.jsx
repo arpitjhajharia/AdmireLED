@@ -803,16 +803,16 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                             <div className="flex items-center border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden h-8">
                                 <div className="bg-slate-100 dark:bg-slate-700 px-3 h-full flex items-center border-r border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase w-20 justify-center">Type</div>
                                 <div className="flex-1 flex p-0.5 bg-slate-50 dark:bg-slate-800 h-full">
-                                    <button onClick={() => updateState('selectedIndoor', 'true')} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${selectedIndoor === 'true' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Indoor</button>
-                                    <button onClick={() => updateState('selectedIndoor', 'false')} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${selectedIndoor === 'false' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Outdoor</button>
+                                    <button onClick={() => { updateState('selectedIndoor', 'true'); updateScreenProp(state.activeScreenIndex, 'selectedIndoor', 'true'); }} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${selectedIndoor === 'true' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Indoor</button>
+                                    <button onClick={() => { updateState('selectedIndoor', 'false'); updateScreenProp(state.activeScreenIndex, 'selectedIndoor', 'false'); }} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${selectedIndoor === 'false' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Outdoor</button>
                                 </div>
                             </div>
 
                             <div className="flex items-center border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden h-8">
                                 <div className="bg-slate-100 dark:bg-slate-700 px-3 h-full flex items-center border-r border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase w-20 justify-center">Supply</div>
                                 <div className="flex-1 flex p-0.5 bg-slate-50 dark:bg-slate-800 h-full">
-                                    <button onClick={() => updateState('assemblyMode', 'assembled')} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${assemblyMode === 'assembled' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Assm</button>
-                                    <button onClick={() => updateState('assemblyMode', 'ready')} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${assemblyMode === 'ready' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Ready</button>
+                                    <button onClick={() => { updateState('assemblyMode', 'assembled'); updateScreenProp(state.activeScreenIndex, 'assemblyMode', 'assembled'); }} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${assemblyMode === 'assembled' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Assm</button>
+                                    <button onClick={() => { updateState('assemblyMode', 'ready'); updateScreenProp(state.activeScreenIndex, 'assemblyMode', 'ready'); }} className={`flex-1 text-[10px] font-bold rounded-sm transition-all ${assemblyMode === 'ready' ? 'bg-white dark:bg-slate-600 shadow text-teal-700 dark:text-teal-300' : 'text-slate-400 hover:text-slate-600'}`}>Ready</button>
                                 </div>
                             </div>
                         </div>
