@@ -1,7 +1,7 @@
 import React from 'react';
 import { Eye, Printer, Trash2, FileText, Download, Copy, Edit } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
-import { formatCurrency, calculateBOM } from '../lib/utils'; // Importing the logic we just moved
+import { formatCurrency, calculateBOM } from '../lib/utils';
 import PrintLayout from './PrintLayout';
 
 const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoadQuote }) => {
@@ -25,7 +25,6 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     };
 
     const handleView = (quote) => {
-        // 1. Try using pre-calculated multi-screen data (New Format)
         if (quote.allScreensData) {
             setViewQuote({
                 allScreensData: quote.allScreensData,
@@ -35,7 +34,6 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
             return;
         }
 
-        // 2. Legacy/Fallback: Re-calculate on the fly
         const state = quote.calculatorState;
         if (state.screens && state.screens.length > 0) {
             const allCalculations = state.screens.map((screen) => {
@@ -65,7 +63,6 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
             }
         }
 
-        // 3. Last Resort: Single Screen Legacy
         const result = calculateBOM(state, inventory, transactions, exchangeRate);
         if (result) {
             setViewQuote({ data: result, client: quote.client, project: quote.project });
@@ -99,7 +96,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     };
 
     return (
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="p-4 md:p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
             {viewQuote && (
                 <div className="fixed inset-0 z-[100] bg-black/80 flex justify-center items-center p-4">
                     <div className="bg-white max-w-4xl w-full h-[90vh] rounded-lg shadow-2xl flex flex-col">
@@ -121,13 +118,15 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     </div>
                 </div>
             )}
+
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
                     <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400" /> Saved Quotes
                 </h2>
             </div>
 
-            <div className="grid gap-4">
+            {/* Mobile Responsive Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {quotes.map(quote => {
                     const state = quote.calculatorState || {};
                     const unit = state.unit || 'm';
@@ -135,34 +134,53 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     const isIndoor = state.selectedIndoor === 'true';
 
                     return (
-                        <div key={quote.id} className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-700/50 dark:border-slate-600 flex justify-between items-center">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-bold text-slate-800 dark:text-white">{quote.project || 'Untitled Project'}</h3>
-                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${isIndoor ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
+                        <div key={quote.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                            {/* Card Body */}
+                            <div className="p-4 flex-1">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white line-clamp-1" title={quote.project}>{quote.project || 'Untitled'}</h3>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isIndoor ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
                                         {isIndoor ? 'Indoor' : 'Outdoor'}
                                     </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">P{pitch}</span>
                                 </div>
-                                <p className="text-sm text-slate-500 mb-2">{quote.client || 'No Client'} • {new Date(quote.updatedAt?.seconds * 1000).toLocaleDateString()}</p>
+                                <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">{quote.client || 'No Client'} • {new Date(quote.updatedAt?.seconds * 1000).toLocaleDateString()}</div>
 
-                                <div className="flex gap-2 flex-wrap text-xs text-slate-600 dark:text-slate-400">
-                                    <span className="bg-white dark:bg-slate-800 border dark:border-slate-600 px-2 py-1 rounded">Size: {state.targetWidth} x {state.targetHeight} {unit}</span>
-                                    <span className="bg-white dark:bg-slate-800 border dark:border-slate-600 px-2 py-1 rounded">Qty: {state.screenQty || 1}</span>
-                                    <span className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-100 dark:border-teal-800 px-2 py-1 rounded font-bold">{formatCurrency(quote.finalAmount, 'INR')}</span>
+                                <div className="flex gap-2 mb-4 text-xs">
+                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 font-medium">
+                                        P{pitch}
+                                    </span>
+                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 font-medium">
+                                        Qty: {state.screenQty || 1}
+                                    </span>
+                                </div>
+
+                                <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
+                                    {formatCurrency(quote.finalAmount, 'INR')}
                                 </div>
                             </div>
-                            <div className="flex gap-2 ml-4">
-                                <button onClick={() => handleView(quote)} className="px-3 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 flex items-center gap-1"><Eye size={14} /> View</button>
-                                <button onClick={() => handleDownloadExcel(quote)} className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 flex items-center gap-1"><Download size={14} /> Excel</button>
-                                <button onClick={() => onLoadQuote(quote, false)} className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center gap-1"><Edit size={14} /> Edit</button>
-                                <button onClick={() => onLoadQuote(quote, true)} className="px-3 py-2 bg-slate-600 text-white rounded text-sm hover:bg-slate-700 flex items-center gap-1"><Copy size={14} /> Clone</button>
-                                <button onClick={() => handleDelete(quote.id)} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+
+                            {/* Action Buttons Grid */}
+                            <div className="grid grid-cols-5 border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800">
+                                <button onClick={() => handleView(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="View">
+                                    <Eye size={16} /> <span className="hidden sm:inline">View</span>
+                                </button>
+                                <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                    <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
+                                </button>
+                                <button onClick={() => handleDownloadExcel(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Excel">
+                                    <Download size={16} /> <span className="hidden sm:inline">Excel</span>
+                                </button>
+                                <button onClick={() => onLoadQuote(quote, true)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Clone">
+                                    <Copy size={16} /> <span className="hidden sm:inline">Clone</span>
+                                </button>
+                                <button onClick={() => handleDelete(quote.id)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete">
+                                    <Trash2 size={16} /> <span className="hidden sm:inline">Del</span>
+                                </button>
                             </div>
                         </div>
                     );
                 })}
-                {quotes.length === 0 && <p className="text-center text-slate-400 py-10">No saved quotes found.</p>}
+                {quotes.length === 0 && <p className="text-center text-slate-400 py-10 col-span-full">No saved quotes found.</p>}
             </div>
         </div>
     );
