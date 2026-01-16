@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply the Inter font globally */
+body {
+  font-family: 'Inter', sans-serif;
+  @apply bg-slate-50 text-slate-900;
+  /* Ensures the whole page background is correct */
+}
+
+/* --- Custom Scrollbar (Restored from Original) --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom class for inner container scrolling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* --- GLOBAL PRINT STYLES --- */
+@media print {
+
+  /* 1. CRITICAL: Hide the main React App Root */
+  #root {
+    display: none !important;
+  }
+
+  /* 2. Hide any other potential overlays (like tooltips/modals still in DOM) */
+  body>*:not(.print-only-portal) {
+    display: none !important;
+  }
+
+  /* 3. Make the Print Portal visible and force it to fill the page */
+  .print-only-portal {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    z-index: 99999 !important;
+    background: white !important;
+    visibility: visible !important;
+  }
+
+  /* 4. Reset page scrolling and size */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+
+    /* --- ADD THESE 2 LINES TO FORCE COLORS --- */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 5. Utility Helpers */
+  .print-break-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Hide the print portal during normal screen usage */
+@media screen {
+  .print-only-portal {
+    display: none;
+  }
+}
