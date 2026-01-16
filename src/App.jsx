@@ -152,6 +152,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen no-print pb-20 bg-slate-50 dark:bg-slate-900 transition-colors font-sans">
+      {/* Main Header */}
       <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 px-4 md:px-6 h-16 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
           <div className="bg-teal-50 dark:bg-teal-900/30 p-2 rounded-lg">
@@ -161,6 +162,7 @@ const App = () => {
         </div>
 
         <div className="flex gap-4 items-center">
+          {/* Desktop Navigation */}
           <div className="hidden md:flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
             <button onClick={() => setView('quote')} className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
             <button onClick={() => setView('inventory')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
@@ -179,6 +181,22 @@ const App = () => {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Navigation Tabs (NEW) */}
+      <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-16 z-40 flex shadow-sm">
+        <button onClick={() => setView('quote')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'quote' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
+          Calculator
+        </button>
+        <button onClick={() => setView('inventory')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'inventory' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
+          Components
+        </button>
+        <button onClick={() => setView('ledger')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'ledger' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
+          Stock
+        </button>
+        <button onClick={() => setView('saved')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'saved' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
+          Quotes
+        </button>
+      </div>
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6">
         {view === 'inventory' && <InventoryManager user={user} transactions={transactions} />}
