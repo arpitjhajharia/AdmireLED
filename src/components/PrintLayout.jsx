@@ -25,7 +25,7 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
             {/* Header */}
             <div className="flex justify-between items-start mb-6 border-b-2 border-slate-800 pb-4">
                 <div className="flex gap-4 items-center">
-                    <img src="/logo.png" alt="Company Logo" className="h-16 w-auto object-contain" />
+                    <img src="/AdmireLED/logo.png" alt="Company Logo" className="h-16 w-auto object-contain" />
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{CONFIG.COMPANY.NAME}</h1>
                         <div className="text-[10px] text-slate-600 mt-1 space-y-0.5">

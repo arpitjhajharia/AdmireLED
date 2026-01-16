@@ -180,7 +180,7 @@ const BOMLayout = ({ data, allScreensData }) => {
         <div className={`p-8 max-w-[210mm] mx-auto bg-white min-h-screen text-slate-800 font-sans text-xs ${isPrintVersion ? 'print-version-container p-0 w-full' : ''}`}>
             <div className="flex justify-between items-start mb-6 border-b-2 border-slate-800 pb-4">
                 <div className="flex items-center gap-4">
-                    <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+                    <img src="/AdmireLED/logo.png" alt="Logo" className="h-12 w-auto" />
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">Bill of Materials</h1>
                         <div className="mt-1 space-y-0.5">
