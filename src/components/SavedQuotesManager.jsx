@@ -72,27 +72,81 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     };
 
     const handleDownloadExcel = (quote) => {
-        const result = calculateBOM(quote.calculatorState, inventory, transactions, exchangeRate);
-        if (!result) return alert("Calculation failed.");
+        // 1. Prepare Data (Handle both old single-screen and new multi-screen quotes)
+        let calculations = [];
+        let grandTotalSell = 0;
+        let grandTotalCost = 0;
 
-        let csv = `Project,${quote.project}\nClient,${quote.client}\nDate,${new Date().toLocaleDateString()}\n\n`;
-        csv += `Bill of Materials\nComponent,Specification,Qty,Rate,Total\n`;
+        if (quote.allScreensData && quote.allScreensData.calculations) {
+            // New Format: Use pre-calculated data attached to the quote
+            calculations = quote.allScreensData.calculations;
+            grandTotalSell = quote.allScreensData.totalProjectSell;
+            grandTotalCost = quote.allScreensData.totalProjectCost;
+        } else {
+            // Fallback: Recalculate (for older quotes or if data is missing)
+            const state = quote.calculatorState;
+            if (state && state.screens && state.screens.length > 0) {
+                // Multi-screen recalculation
+                calculations = state.screens.map(screen => {
+                    // Flatten the state: Merge global settings with specific screen settings
+                    const screenState = { ...state, ...screen };
+                    return calculateBOM(screenState, inventory, transactions, exchangeRate);
+                }).filter(c => c !== null);
+            } else {
+                // Single-screen legacy fallback
+                const result = calculateBOM(state, inventory, transactions, exchangeRate);
+                if (result) calculations = [result];
+            }
 
-        result.detailedItems.forEach(item => {
-            csv += `"${item.name}","${item.spec}",${item.qty * result.screenQty},${item.unit},${item.total * result.screenQty}\n`;
+            // Sum up totals if we had to recalculate
+            if (calculations.length > 0) {
+                grandTotalCost = calculations.reduce((acc, c) => acc + c.totalProjectCost, 0);
+                grandTotalSell = calculations.reduce((acc, c) => acc + c.totalProjectSell, 0);
+            }
+        }
+
+        if (calculations.length === 0) return alert("Calculation failed. Inventory items might be missing.");
+
+        // 2. Generate CSV Content
+        // Sanitize project/client names to prevent CSV breakage
+        const safeProject = (quote.project || '').replace(/,/g, ' ');
+        const safeClient = (quote.client || '').replace(/,/g, ' ');
+
+        let csv = `Project,${safeProject}\nClient,${safeClient}\nDate,${new Date().toLocaleDateString()}\n\n`;
+
+        calculations.forEach((calc, index) => {
+            csv += `SCREEN CONFIGURATION #${index + 1}\n`;
+            csv += `Dimensions,${calc.finalWidth}m x ${calc.finalHeight}m\n`;
+            csv += `Quantity,${calc.screenQty}\n`;
+            csv += `\nBill of Materials (Config #${index + 1})\nComponent,Specification,Qty/Scrn,Total Qty,Rate,Total Amount\n`;
+
+            calc.detailedItems.forEach(item => {
+                const name = (item.name || '').replace(/"/g, '""');
+                const spec = (item.spec || '').replace(/"/g, '""');
+                const totalQty = item.qty * calc.screenQty;
+                const totalAmt = item.total * calc.screenQty;
+                csv += `"${name}","${spec}",${item.qty},${totalQty},${item.unit.toFixed(2)},${totalAmt.toFixed(2)}\n`;
+            });
+
+            csv += `\nSubtotal (Cost),${calc.totalProjectCost.toFixed(2)}\n`;
+            csv += `Subtotal (Sell),${calc.totalProjectSell.toFixed(2)}\n`;
+            csv += `\n--------------------------------\n\n`;
         });
 
-        csv += `\nFinancials\n`;
-        csv += `Total Cost,${result.totalProjectCost}\n`;
-        csv += `Selling Price,${result.totalProjectSell}\n`;
-        csv += `Margin,${result.matrix.margin.total}\n`;
+        // 3. Grand Totals
+        csv += `PROJECT SUMMARY\n`;
+        csv += `Grand Total Cost,${grandTotalCost.toFixed(2)}\n`;
+        csv += `Grand Total Sell,${grandTotalSell.toFixed(2)}\n`;
+        csv += `Net Margin,${(grandTotalSell - grandTotalCost).toFixed(2)}\n`;
 
-        const blob = new Blob([csv], { type: 'text/csv' });
+        // 4. Download Trigger
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${quote.project}_Quote.csv`;
+        a.download = `${safeProject.replace(/[^a-z0-9]/gi, '_')}_BOM.csv`;
         a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     return (
