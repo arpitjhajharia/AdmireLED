@@ -45,6 +45,10 @@ const InventoryManager = ({ user, transactions = [] }) => {
             if (!newItem.brand || !newItem.model || !newItem.price || !newItem.vendor || !newItem.amps) {
                 return alert("Please fill all compulsory (*) fields.");
             }
+        } else if (newItem.type === 'ready') {
+            if (!newItem.pitch || !newItem.brand || !newItem.model || !newItem.price || !newItem.material || !newItem.width || !newItem.height || !newItem.weight || !newItem.avgPower || !newItem.maxPower || !newItem.brightness || !newItem.refreshRate || !newItem.contrast || !newItem.viewAngleH || !newItem.viewAngleV || !newItem.ipFront || !newItem.ipBack) {
+                return alert("Please fill all compulsory (*) fields.");
+            }
         } else if (!newItem.brand || !newItem.model) {
             return alert("Brand and Model are required");
         }
@@ -172,7 +176,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         <option value="processor">Processor</option>
                     </select>
 
-                    {newItem.type === 'module' && (
+                    {(newItem.type === 'module' || newItem.type === 'ready') && (
                         <>
                             <input placeholder="Pitch*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.pitch} onChange={e => setNewItem({ ...newItem, pitch: e.target.value })} />
                             <select className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}>
@@ -182,8 +186,8 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         </>
                     )}
 
-                    <input placeholder={(newItem.type === 'module' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Brand*" : "Brand"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brand} onChange={e => setNewItem({ ...newItem, brand: e.target.value })} />
-                    <input placeholder={(newItem.type === 'module' || newItem.type === 'cabinet' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Model/SKU*" : "Model"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.model} onChange={e => setNewItem({ ...newItem, model: e.target.value })} />
+                    <input placeholder={(newItem.type === 'module' || newItem.type === 'ready' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Brand*" : "Brand"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brand} onChange={e => setNewItem({ ...newItem, brand: e.target.value })} />
+                    <input placeholder={(newItem.type === 'module' || newItem.type === 'ready' || newItem.type === 'cabinet' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Model/SKU*" : "Model"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.model} onChange={e => setNewItem({ ...newItem, model: e.target.value })} />
 
                     <div className="flex gap-2 items-center col-span-2 md:col-span-1">
                         <div className="flex-1 min-w-[100px]" title="Base Price">
@@ -247,8 +251,26 @@ const InventoryManager = ({ user, transactions = [] }) => {
 
                     {newItem.type === 'ready' && (
                         <>
-                            <input placeholder="Width (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
-                            <input placeholder="Height (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
+                            <input placeholder="Cabinet Material*" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.material} onChange={e => setNewItem({ ...newItem, material: e.target.value })} />
+                            <input placeholder="LED Type" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ledType} onChange={e => setNewItem({ ...newItem, ledType: e.target.value })} />
+                            <input placeholder="Lamp Make" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.lampMake} onChange={e => setNewItem({ ...newItem, lampMake: e.target.value })} />
+
+                            <input placeholder="Width (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
+                            <input placeholder="Height (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
+
+                            <input placeholder="Weight/sqm (kg)*" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.weight} onChange={e => setNewItem({ ...newItem, weight: e.target.value })} />
+                            <input placeholder="Avg Power/sqm (W)*" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.avgPower} onChange={e => setNewItem({ ...newItem, avgPower: e.target.value })} />
+                            <input placeholder="Max Power/sqm (W)*" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.maxPower} onChange={e => setNewItem({ ...newItem, maxPower: e.target.value })} />
+
+                            <input placeholder="Brightness (nits)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brightness} onChange={e => setNewItem({ ...newItem, brightness: e.target.value })} />
+                            <input placeholder="Refresh Rate*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.refreshRate} onChange={e => setNewItem({ ...newItem, refreshRate: e.target.value })} />
+                            <input placeholder="Contrast* (e.g. 5000:1)" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.contrast} onChange={e => setNewItem({ ...newItem, contrast: e.target.value })} />
+
+                            <input placeholder="Viewing Angle (H)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleH} onChange={e => setNewItem({ ...newItem, viewAngleH: e.target.value })} />
+                            <input placeholder="Viewing Angle (V)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleV} onChange={e => setNewItem({ ...newItem, viewAngleV: e.target.value })} />
+
+                            <input placeholder="IP Protection (Front)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipFront} onChange={e => setNewItem({ ...newItem, ipFront: e.target.value })} />
+                            <input placeholder="IP Protection (Back)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipBack} onChange={e => setNewItem({ ...newItem, ipBack: e.target.value })} />
                         </>
                     )}
                     <button

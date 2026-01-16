@@ -48,7 +48,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     totalLEDSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.led.sell * calc.screenQty), 0),
                     totalServicesSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.sell.total - (calc.matrix.led.sell * calc.screenQty)), 0),
                     totalMargin: 0,
-                    totalScreenQty: allCalculations.reduce((sum, calc) => sum + calc.screenQty, 0),
+                    totalScreenQty: allCalculations.reduce((sum, calc) => sum + Number(calc.screenQty), 0),
                     calculations: allCalculations,
                     screenConfigs: state.screens
                 };
@@ -136,26 +136,57 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     return (
                         <div key={quote.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
                             {/* Card Body */}
-                            <div className="p-4 flex-1">
+                            <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white line-clamp-1" title={quote.project}>{quote.project || 'Untitled'}</h3>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-800 dark:text-white line-clamp-1" title={quote.project}>
+                                            {quote.project || 'Untitled'}
+                                        </h3>
+                                        <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                            {quote.client || 'No Client'}
+                                        </div>
+                                    </div>
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isIndoor ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
                                         {isIndoor ? 'Indoor' : 'Outdoor'}
                                     </span>
                                 </div>
-                                <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">{quote.client || 'No Client'} • {new Date(quote.updatedAt?.seconds * 1000).toLocaleDateString()}</div>
 
-                                <div className="flex gap-2 mb-4 text-xs">
-                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 font-medium">
-                                        P{pitch}
-                                    </span>
-                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 font-medium">
-                                        Qty: {state.screenQty || 1}
-                                    </span>
+                                <div className="text-xs text-slate-400 mb-4">
+                                    {new Date(quote.updatedAt?.seconds * 1000).toLocaleDateString()}
                                 </div>
 
-                                <div className="text-xl font-bold text-teal-600 dark:text-teal-400">
-                                    {formatCurrency(quote.finalAmount, 'INR')}
+                                {/* Screen Breakdown List */}
+                                <div className="bg-slate-50 dark:bg-slate-700/30 p-2 rounded-lg mb-4 space-y-1.5 flex-1">
+                                    {quote.allScreensData?.calculations ? (
+                                        quote.allScreensData.calculations.map((calc, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
+                                                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                                                    Screen #{idx + 1} <span className="text-slate-400 font-normal">({calc.finalWidth}x{calc.finalHeight}m ×{calc.screenQty})</span>
+                                                </span>
+                                                <span className="font-bold text-slate-800 dark:text-white">
+                                                    {formatCurrency(calc.totalProjectSell, 'INR', true)}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        // Fallback for quotes saved before multi-screen update
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-slate-600 dark:text-slate-300 font-medium">
+                                                Screen #1 <span className="text-slate-400 font-normal">(P{pitch} ×{state.screenQty || 1})</span>
+                                            </span>
+                                            <span className="font-bold text-slate-800 dark:text-white">
+                                                {formatCurrency(quote.finalAmount, 'INR', true)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Total Footer */}
+                                <div className="flex justify-between items-end pt-2 border-t border-slate-100 dark:border-slate-700 mt-auto">
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Total Estimate</span>
+                                    <span className="text-xl font-bold text-teal-600 dark:text-teal-400">
+                                        {formatCurrency(quote.finalAmount, 'INR')}
+                                    </span>
                                 </div>
                             </div>
 

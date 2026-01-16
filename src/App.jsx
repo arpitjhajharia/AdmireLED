@@ -216,16 +216,18 @@ const App = () => {
         )}
       </main>
 
-      {/* Mobile Bottom Bar for Price */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 lg:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 flex items-center gap-4">
-        <div className="flex-1">
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Total Estimate</div>
-          <div className="text-xl font-bold text-slate-900 dark:text-white">
-            {calcState.project && formatCurrency(calculateBOM(calcState, inventory, transactions, exchangeRate)?.totalProjectSell || 0, 'INR')}
+      {/* Mobile Bottom Bar for Price - Only visible on Calculator Tab */}
+      {view === 'quote' && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4 lg:hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 flex items-center gap-4">
+          <div className="flex-1">
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">Total Estimate</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">
+              {formatCurrency(calculateBOM(calcState, inventory, transactions, exchangeRate)?.totalProjectSell || 0, 'INR')}
+            </div>
           </div>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="px-6 py-2.5 bg-teal-600 text-white rounded-lg font-bold shadow-lg shadow-teal-600/30">Top</button>
         </div>
-        <button onClick={() => document.querySelector('main').scrollIntoView({ behavior: 'smooth' })} className="px-6 py-2.5 bg-teal-600 text-white rounded-lg font-bold shadow-lg shadow-teal-600/30">Top</button>
-      </div>
+      )}
     </div>
   );
 };

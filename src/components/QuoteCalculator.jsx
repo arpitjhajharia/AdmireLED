@@ -652,7 +652,8 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                 totalLEDSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.led.sell * calc.screenQty), 0),
                 totalServicesSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.sell.total - (calc.matrix.led.sell * calc.screenQty)), 0),
                 totalMargin: 0,
-                totalScreenQty: allCalculations.reduce((sum, calc) => sum + calc.screenQty, 0),
+                // FIX: Force 'screenQty' to be a Number so it adds (10+2=12) instead of concatenates ("10"+"2"="102")
+                totalScreenQty: allCalculations.reduce((sum, calc) => sum + Number(calc.screenQty), 0),
                 calculations: allCalculations,
                 screenConfigs: debouncedState.screens
             };

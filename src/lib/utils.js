@@ -16,13 +16,17 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
     // Safety check for empty inputs
     if (!state || !inventory) return null;
 
+    // 1. Destructure state, but rename screenQty to rawScreenQty to avoid naming conflict
     const {
-        screenQty, targetWidth, targetHeight, unit,
+        screenQty: rawScreenQty, targetWidth, targetHeight, unit,
         selectedIndoor, assemblyMode, selectedPitch, selectedModuleId,
         selectedCabinetId, selectedCardId, selectedPSUId, selectedProcId,
         sizingMode, readyId, margin, extras, overrides, extraComponents,
         pricingMode, targetSellPrice, commercials, terms
     } = state;
+
+    // 2. Force convert quantity to Number immediately
+    const screenQty = Number(rawScreenQty || 1);
 
     const getPriceInInr = (item) => {
         if (!item) return 0;
@@ -266,7 +270,9 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
         finalPrice: totalProjectSell,
         totalProjectSell,
 
-        assemblyMode, screenQty,
+        assemblyMode,
+        // 3. Return the numeric screenQty, so external components use the Number, not String
+        screenQty,
         commercials: { sellProcTotal, sellInstallTotal, sellStructureTotal },
         terms: terms || { price: 'Ex-works Mumbai', deliveryWeeks: 10, payment: [] },
 
