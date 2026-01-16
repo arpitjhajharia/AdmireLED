@@ -33,7 +33,7 @@ const App = () => {
         selectedModuleId: '',
         selectedCabinetId: '',
         selectedCardId: '',
-        selectedPSUId: '',
+        selectedSMPSId: '',
         selectedProcId: '',
         sizingMode: 'closest',
         readyId: '',
@@ -51,7 +51,7 @@ const App = () => {
     activeScreenIndex: 0,
     selectedIndoor: 'true', assemblyMode: 'assembled', selectedPitch: '',
     selectedModuleId: '', selectedCabinetId: '', selectedCardId: '',
-    selectedPSUId: '', selectedProcId: '', sizingMode: 'closest', readyId: '',
+    selectedSMPSId: '', selectedProcId: '', sizingMode: 'closest', readyId: '',
     margin: 0, targetSellPrice: 0, pricingMode: 'margin',
     commercials: {
       processor: { val: 0, unit: 'screen' },

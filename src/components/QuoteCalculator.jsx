@@ -39,7 +39,7 @@ const LogisticsInput = ({ label, fieldKey, extras, updateExtra }) => (
 
 const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, updateScreenProp, inventory, getStock, overrides, onOverride, editingRow, setEditingRow, onClearOverride }) => {
     const activeScreen = state.screens[state.activeScreenIndex];
-    const { screenQty, selectedPitch, selectedModuleId, selectedCabinetId, selectedCardId, selectedPSUId, selectedProcId, extraComponents, extras, commercials } = activeScreen;
+    const { screenQty, selectedPitch, selectedModuleId, selectedCabinetId, selectedCardId, selectedSMPSId, selectedProcId, extraComponents, extras, commercials } = activeScreen;
     const { assemblyMode, selectedIndoor } = state;
     const safeGenId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
@@ -75,7 +75,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
         }
         if (item.id === 'cabinets') return <select value={selectedCabinetId} onChange={e => updateScreenState('selectedCabinetId', e.target.value)} disabled={!selectedModule} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50"><option value="">Select Cabinet...</option>{cabinets.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({c.width}x{c.height}) - Stock: {getStock(c.id)}</option>)}</select>;
         if (item.id === 'cards') return <select value={selectedCardId} onChange={e => updateScreenState('selectedCardId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Card...</option>{inventory.filter(i => i.type === 'card').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
-        if (item.id === 'psu') return <select value={selectedPSUId} onChange={e => updateScreenState('selectedPSUId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'psu').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
+        if (item.id === 'smps') return <select value={selectedSMPSId} onChange={e => updateScreenState('selectedSMPSId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'smps').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
         if (item.id === 'processor') {
             return (
                 <div className="flex flex-col gap-2 md:gap-1">
@@ -98,11 +98,11 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                 <div className="flex gap-1 items-center">
                     <select value={extraComponents[extraIdx].componentId} onChange={e => { const n = [...extraComponents]; n[extraIdx].componentId = e.target.value; updateScreenState('extraComponents', n); }} className="flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                         <option value="">Select...</option>
-                        {['module', 'cabinet', 'card', 'psu'].map(type => {
+                        {['module', 'cabinet', 'card', 'smps'].map(type => {
                             const items = inventory.filter(i => i.type === type).sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model));
                             if (items.length === 0) return null;
                             return (
-                                <optgroup key={type} label={type === 'psu' ? 'SMPS' : type.toUpperCase()}>
+                                <optgroup key={type} label={type === 'smps' ? 'SMPS' : type.toUpperCase()}>
                                     {items.map(i => (
                                         <option key={i.id} value={i.id}>{i.brand} {i.model}</option>
                                     ))}
@@ -125,7 +125,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
         { id: 'modules', type: 'led', name: 'Modules', qty: 0, unit: 0, total: 0 },
         { id: 'cabinets', type: 'led', name: 'Cabinets', qty: 0, unit: 0, total: 0 },
         { id: 'cards', type: 'led', name: 'Receiving Cards', qty: 0, unit: 0, total: 0 },
-        { id: 'psu', type: 'led', name: 'SMPS', qty: 0, unit: 0, total: 0 },
+        { id: 'smps', type: 'led', name: 'SMPS', qty: 0, unit: 0, total: 0 },
         { id: 'processor', type: 'service', name: 'Processor', qty: 1, unit: 0, total: 0 }
     ] : [
         { id: 'ready', type: 'led', name: 'Ready Unit', qty: 0, unit: 0, total: 0 },
@@ -486,7 +486,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                         selectedModuleId: '',
                         selectedCabinetId: '',
                         selectedCardId: '',
-                        selectedPSUId: '',
+                        selectedSMPSId: '',
                         selectedProcId: '',
                         sizingMode: 'closest',
                         readyId: '',
@@ -504,7 +504,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                 activeScreenIndex: 0,
                 selectedIndoor: 'true', assemblyMode: 'assembled', selectedPitch: '',
                 selectedModuleId: '', selectedCabinetId: '', selectedCardId: '',
-                selectedPSUId: '', selectedProcId: '', sizingMode: 'closest', readyId: '',
+                selectedSMPSId: '', selectedProcId: '', sizingMode: 'closest', readyId: '',
                 margin: 0, pricingMode: 'margin', targetSellPrice: 0,
                 extraComponents: [],
                 commercials: {

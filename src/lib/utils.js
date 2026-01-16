@@ -20,7 +20,7 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
     const {
         screenQty: rawScreenQty, targetWidth, targetHeight, unit,
         selectedIndoor, assemblyMode, selectedPitch, selectedModuleId,
-        selectedCabinetId, selectedCardId, selectedPSUId, selectedProcId,
+        selectedCabinetId, selectedCardId, selectedSMPSId, selectedProcId,
         sizingMode, readyId, margin, extras, overrides, extraComponents,
         pricingMode, targetSellPrice, commercials, terms
     } = state;
@@ -44,7 +44,7 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
         module = inventory.find(i => i.id === selectedModuleId);
         cabinet = inventory.find(i => i.id === selectedCabinetId);
         card = inventory.find(i => i.id === selectedCardId);
-        psu = inventory.find(i => i.id === selectedPSUId);
+        psu = inventory.find(i => i.id === selectedSMPSId);
         proc = inventory.find(i => i.id === selectedProcId);
         if (!module || !cabinet) return null;
     } else {
@@ -83,7 +83,7 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
             { id: 'modules', inventoryId: selectedModuleId, name: 'Modules', spec: `${module.brand} ${module.model}`, qty: totalModules, unit: getPriceInInr(module), total: totalModules * getPriceInInr(module), type: 'led' },
             { id: 'cabinets', inventoryId: selectedCabinetId, name: 'Cabinets', spec: `${cabinet.brand} ${cabinet.model}`, qty: totalCabinetsPerScreen, unit: getPriceInInr(cabinet), total: totalCabinetsPerScreen * getPriceInInr(cabinet), type: 'led' },
             { id: 'cards', inventoryId: selectedCardId, name: 'Cards', spec: card ? card.brand : '-', qty: totalCabinetsPerScreen, unit: getPriceInInr(card), total: totalCabinetsPerScreen * getPriceInInr(card), type: 'led' },
-            { id: 'psu', inventoryId: selectedPSUId, name: 'SMPS', spec: psu ? psu.brand : '-', qty: totalCabinetsPerScreen, unit: getPriceInInr(psu), total: totalCabinetsPerScreen * getPriceInInr(psu), type: 'led' },
+            { id: 'psu', inventoryId: selectedSMPSId, name: 'SMPS', spec: psu ? psu.brand : '-', qty: totalCabinetsPerScreen, unit: getPriceInInr(psu), total: totalCabinetsPerScreen * getPriceInInr(psu), type: 'led' },
         ];
     } else {
         rawItems = [

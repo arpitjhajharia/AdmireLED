@@ -41,7 +41,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
             if (!newItem.brand || !newItem.model || !newItem.price || !newItem.vendor) {
                 return alert("Please fill all compulsory (*) fields.");
             }
-        } else if (newItem.type === 'psu') {
+        } else if (newItem.type === 'smps') {
             if (!newItem.brand || !newItem.model || !newItem.price || !newItem.vendor || !newItem.amps) {
                 return alert("Please fill all compulsory (*) fields.");
             }
@@ -172,7 +172,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         <option value="cabinet">Cabinet</option>
                         <option value="ready">Ready Unit</option>
                         <option value="card">Receiving Card</option>
-                        <option value="psu">SMPS</option>
+                        <option value="smps">SMPS</option>
                         <option value="processor">Processor</option>
                     </select>
 
@@ -213,7 +213,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         <input placeholder="Ports (Optional)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ports} onChange={e => setNewItem({ ...newItem, ports: e.target.value })} />
                     )}
 
-                    {newItem.type === 'psu' && (
+                    {newItem.type === 'smps' && (
                         <input placeholder="Capacity (Amps)*" type="number" step="0.1" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.amps} onChange={e => setNewItem({ ...newItem, amps: e.target.value })} />
                     )}
 
@@ -345,7 +345,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
                             {sortedItems.map(item => (
                                 <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${editingId === item.id ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
-                                    <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>{item.type === 'psu' ? 'SMPS' : item.type}</span></td>
+                                    <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
                                     <td className="px-4 py-3 dark:text-slate-200">
                                         <div className="font-medium">{item.brand} {item.model}</div>
                                         {item.vendor && <div className="text-[10px] text-teal-600 dark:text-teal-400 mt-0.5">{item.vendor}</div>}
@@ -367,7 +367,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                                         {(item.type === 'card' || item.type === 'processor') && (
                                             <span>{item.ports ? `${item.ports} Ports` : ''}</span>
                                         )}
-                                        {item.type === 'psu' && (
+                                        {item.type === 'smps' && (
                                             <span>{item.amps ? `${item.amps} Amps` : ''}</span>
                                         )}
                                         {item.type === 'ready' && (
