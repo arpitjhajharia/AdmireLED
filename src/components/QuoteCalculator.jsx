@@ -679,7 +679,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                     </div>
 
                     <div className="p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="relative group">
                                 <label className="absolute -top-1.5 left-2 bg-white dark:bg-slate-800 px-1 text-[10px] font-bold text-teal-600 dark:text-teal-400">CLIENT</label>
                                 <input value={client} onChange={e => updateState('client', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 dark:text-white transition-all" placeholder="Client Name" />
@@ -730,32 +730,32 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                     <div
                                         key={screen.id}
                                         onClick={() => updateState('activeScreenIndex', index)}
-                                        className={`grid grid-cols-12 gap-2 items-center p-1.5 rounded border transition-all cursor-pointer ${state.activeScreenIndex === index
-                                                ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20 shadow-sm ring-1 ring-teal-500/20'
-                                                : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-teal-300'
+                                        className={`grid grid-cols-4 md:grid-cols-12 gap-2 gap-y-3 items-center p-2 rounded border transition-all cursor-pointer ${state.activeScreenIndex === index
+                                            ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20 shadow-sm ring-1 ring-teal-500/20'
+                                            : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-teal-300'
                                             }`}
                                     >
-                                        <div className="col-span-1 flex justify-center">
+                                        <div className="col-span-4 md:col-span-1 flex justify-between md:justify-center border-b md:border-b-0 pb-1 md:pb-0 mb-1 md:mb-0"><span className="md:hidden text-xs font-bold text-slate-500">Config #</span>
                                             <span className={`flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold ${state.activeScreenIndex === index
-                                                    ? 'bg-teal-600 text-white'
-                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                                ? 'bg-teal-600 text-white'
+                                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                                                 }`}>
                                                 {index + 1}
                                             </span>
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2 md:col-span-3">
                                             <input type="number" placeholder="W" value={screen.targetWidth} onChange={e => updateScreenProp(index, 'targetWidth', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-3">
+                                        <div className="col-span-2 md:col-span-3">
                                             <input type="number" placeholder="H" value={screen.targetHeight} onChange={e => updateScreenProp(index, 'targetHeight', e.target.value)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-semibold focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-2 md:col-span-2">
                                             <input type="number" min="0" value={screen.screenQty} onChange={e => updateScreenProp(index, 'screenQty', Math.max(0, parseInt(e.target.value)) || 0)} className="w-full py-0.5 px-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm font-bold text-center focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none" />
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-2 md:col-span-2">
                                             <select value={screen.sizingMode} onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)} className="w-full py-0.5 px-1 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-[10px] focus:border-teal-500 outline-none"><option value="closest">Auto</option><option value="up">Up</option><option value="down">Down</option></select>
                                         </div>
-                                        <div className="col-span-1 flex justify-end gap-1">
+                                        <div className="col-span-4 md:col-span-1 flex justify-end gap-1 border-t md:border-t-0 pt-2 md:pt-0 mt-1 md:mt-0">
                                             <button onClick={(e) => { e.stopPropagation(); duplicateScreen(index); }} className="p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400" title="Duplicate"><Copy size={12} /></button>
                                             {state.screens.length > 1 && (<button onClick={(e) => { e.stopPropagation(); removeScreen(index); }} className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400" title="Remove"><Trash2 size={12} /></button>)}
                                         </div>
@@ -797,8 +797,8 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                                 key={screen.id}
                                                 onClick={() => updateState('activeScreenIndex', index)}
                                                 className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isActive
-                                                        ? 'bg-teal-600 text-white shadow-lg'
-                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                    ? 'bg-teal-600 text-white shadow-lg'
+                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
