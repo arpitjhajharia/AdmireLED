@@ -1,19 +1,35 @@
 import React, { useState } from 'react';
-import { Archive, Trash2 } from 'lucide-react';
+import { Archive, Trash2, Edit, X } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 
 const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
     const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+    const [editingId, setEditingId] = useState(null);
 
     const handleAddTx = async () => {
         if (!newTx.itemId || !newTx.qty) return alert("Select Item and Qty");
         try {
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').add({
-                ...newTx,
-                createdAt: new Date()
-            });
-            setNewTx({ ...newTx, qty: '', remarks: '' });
+            const ref = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions');
+
+            if (editingId) {
+                await ref.doc(editingId).update({ ...newTx, qty: Number(newTx.qty), updatedAt: new Date() });
+                setEditingId(null);
+            } else {
+                await ref.add({ ...newTx, qty: Number(newTx.qty), createdAt: new Date() });
+            }
+            setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
         } catch (e) { console.error(e); }
+    };
+
+    const handleEdit = (tx) => {
+        setNewTx({ ...tx, qty: tx.qty });
+        setEditingId(tx.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancel = () => {
+        setEditingId(null);
+        setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
     };
 
     const handleDelete = async (id) => {
@@ -32,8 +48,13 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white">Stock Ledger</h2>
             </div>
 
-            {/* Add Transaction Form */}
-            <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg border border-slate-200 dark:border-slate-700 mb-6">
+            {/* Add/Edit Transaction Form */}
+            <div className={`p-4 rounded-lg border mb-6 transition-colors ${editingId ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-700'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{editingId ? 'Edit Transaction' : 'New Transaction'}</h3>
+                    {editingId && <button onClick={handleCancel} className="text-xs text-red-500 flex items-center gap-1"><X size={14} /> Cancel</button>}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Date & Action</label>
@@ -67,8 +88,8 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                     </div>
                 </div>
 
-                <button onClick={handleAddTx} className="w-full md:w-auto bg-teal-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-teal-700 transition-colors shadow-sm">
-                    Add Transaction
+                <button onClick={handleAddTx} className={`w-full md:w-auto text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
+                    {editingId ? 'Update Transaction' : 'Add Transaction'}
                 </button>
             </div>
 
@@ -100,7 +121,10 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                     <span className={`block text-lg font-bold ${tx.type === 'in' ? 'text-green-600' : 'text-red-500'}`}>
                                         {tx.type === 'in' ? '+' : '-'}{tx.qty}
                                     </span>
-                                    <button onClick={() => handleDelete(tx.id)} className="text-[10px] text-red-400 hover:text-red-600 underline mt-1">Delete</button>
+                                    <div className="flex gap-3 justify-end mt-1">
+                                        <button onClick={() => handleEdit(tx)} className="text-[10px] text-blue-500 hover:text-blue-700 underline">Edit</button>
+                                        <button onClick={() => handleDelete(tx.id)} className="text-[10px] text-red-400 hover:text-red-600 underline">Delete</button>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -140,7 +164,10 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                         </td>
                                         <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{tx.remarks}</td>
                                         <td className="px-4 py-3 text-right">
-                                            <button onClick={() => handleDelete(tx.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"><Trash2 size={14} /></button>
+                                            <div className="flex justify-end gap-1">
+                                                <button onClick={() => handleEdit(tx)} className="text-blue-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"><Edit size={14} /></button>
+                                                <button onClick={() => handleDelete(tx.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"><Trash2 size={14} /></button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
