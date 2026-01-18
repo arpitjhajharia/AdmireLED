@@ -18,7 +18,6 @@ const InventoryManager = ({ user, transactions = [] }) => {
     // Batch Management State
     const [showBatchModal, setShowBatchModal] = React.useState(false);
     const [selectedItemForBatches, setSelectedItemForBatches] = React.useState(null);
-    const [batchForm, setBatchForm] = React.useState({ name: '', qty: '' });
 
     React.useEffect(() => {
         if (!user || !db) return;
@@ -131,7 +130,6 @@ const InventoryManager = ({ user, transactions = [] }) => {
     // --- Batch Management Functions ---
     const openBatchModal = (item) => {
         setSelectedItemForBatches(item);
-        setBatchForm({ name: '', qty: '' });
         setShowBatchModal(true);
     };
 
@@ -154,24 +152,6 @@ const InventoryManager = ({ user, transactions = [] }) => {
             .map(([name, qty]) => ({ name, qty }))
             .filter(b => b.qty !== 0) // Optional: Hide zero balance batches
             .sort((a, b) => b.qty - a.qty); // Sort highest stock first
-    };
-
-    // Add Batch = Create a "Stock In" Transaction
-    const handleAddBatchTx = async () => {
-        if (!batchForm.name || !batchForm.qty) return;
-
-        try {
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').add({
-                date: new Date().toISOString().split('T')[0],
-                type: 'in',
-                itemId: selectedItemForBatches.id,
-                qty: Number(batchForm.qty),
-                batch: batchForm.name, // Save the batch to the ledger
-                remarks: 'Added via Inventory Manager',
-                createdAt: new Date()
-            });
-            setBatchForm({ name: '', qty: '' });
-        } catch (e) { console.error(e); }
     };
 
     // Sorting Logic: 1. By Type (A-Z) -> 2. By Name (A-Z)
@@ -472,24 +452,8 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         </div>
 
                         <div className="p-6">
-                            {/* Add New Batch */}
-                            <div className="flex gap-2 mb-6">
-                                <input
-                                    placeholder="Batch # (e.g. A1)"
-                                    className="flex-1 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                                    value={batchForm.name}
-                                    onChange={e => setBatchForm({ ...batchForm, name: e.target.value })}
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Qty"
-                                    className="w-24 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                                    value={batchForm.qty}
-                                    onChange={e => setBatchForm({ ...batchForm, qty: e.target.value })}
-                                />
-                                <button onClick={handleAddBatchTx} className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded">
-                                    <Plus size={18} />
-                                </button>
+                            <div className="mb-4 text-xs text-slate-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
+                                ℹ️ To add stock or new batches, please use the <b>Stock Ledger</b> tab. This list shows current calculated balances.
                             </div>
 
                             {/* Batch List (Derived from Ledger) */}
