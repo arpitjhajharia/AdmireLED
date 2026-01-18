@@ -23,11 +23,28 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                         <h3 className="font-bold text-teal-800 dark:text-teal-300 text-sm">
                             Screen Configuration #{screenIndex + 1}
                         </h3>
-                        <div className="grid grid-cols-4 gap-2 mt-2 text-xs text-teal-700 dark:text-teal-400">
-                            <div><span className="font-semibold">Target:</span> {screenConfig.targetWidth}×{screenConfig.targetHeight}{screenConfig.unit || 'm'}</div>
-                            <div><span className="font-semibold">Final:</span> {finalWidth}m x {finalHeight}m <span className="opacity-75">/ {(Number(finalWidth) * 3.28084).toFixed(2)}ft x {(Number(finalHeight) * 3.28084).toFixed(2)}ft</span></div>
-                            <div><span className="font-semibold">Quantity:</span> {screenQty} screens</div>
-                            {moduleType && <div><span className="font-semibold">Pitch:</span> P{moduleType.pitch}</div>}
+                        <div className="flex flex-wrap gap-x-8 gap-y-3 mt-3 text-xs text-teal-800 dark:text-teal-300">
+                            <div>
+                                <span className="font-bold uppercase text-[10px] text-teal-600 dark:text-teal-500 tracking-wider block mb-0.5">Target Size</span>
+                                {screenConfig.targetWidth} × {screenConfig.targetHeight} {screenConfig.unit || 'm'}
+                            </div>
+
+                            <div>
+                                <span className="font-bold uppercase text-[10px] text-teal-600 dark:text-teal-500 tracking-wider block mb-0.5">Final Dimensions</span>
+                                {finalWidth}m × {finalHeight}m <span className="text-teal-600/70">/ {(Number(finalWidth) * 3.28084).toFixed(2)}ft × {(Number(finalHeight) * 3.28084).toFixed(2)}ft</span>
+                            </div>
+
+                            <div>
+                                <span className="font-bold uppercase text-[10px] text-teal-600 dark:text-teal-500 tracking-wider block mb-0.5">Quantity</span>
+                                {screenQty} Screens
+                            </div>
+
+                            {moduleType && (
+                                <div>
+                                    <span className="font-bold uppercase text-[10px] text-teal-600 dark:text-teal-500 tracking-wider block mb-0.5">Type</span>
+                                    P{moduleType.pitch} {moduleType.indoor ? 'Indoor' : 'Outdoor'}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -304,8 +321,16 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                                 </p>
                             )}
                             {!isMultiScreen && data.moduleType && (
-                                <p className="text-xs text-slate-500 mt-1">
-                                    P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'} • {data.finalWidth}m x {data.finalHeight}m / {(Number(data.finalWidth) * 3.28084).toFixed(2)}ft x {(Number(data.finalHeight) * 3.28084).toFixed(2)}ft • Qty: {data.screenQty}
+                                <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-2">
+                                    <span className="inline-block bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold border border-slate-200">
+                                        P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'}
+                                    </span>
+                                    <span>
+                                        {data.finalWidth}m x {data.finalHeight}m <span className="text-slate-400">/ {(Number(data.finalWidth) * 3.28084).toFixed(2)}ft x {(Number(data.finalHeight) * 3.28084).toFixed(2)}ft</span>
+                                    </span>
+                                    <span className="font-bold text-slate-700 border-l border-slate-300 pl-2 ml-1">
+                                        {data.screenQty} Screens
+                                    </span>
                                 </p>
                             )}
                         </div>
