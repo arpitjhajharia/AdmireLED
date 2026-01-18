@@ -97,7 +97,10 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                 <div className="grid grid-cols-3 gap-y-1 text-[11px]">
                                     <span className="font-semibold text-slate-500">Client:</span> <span className="col-span-2 font-bold">{clientName}</span>
                                     <span className="font-semibold text-slate-500">Project:</span> <span className="col-span-2 font-bold">{projectName}</span>
-                                    <span className="font-semibold text-slate-500">Screen Size:</span> <span className="col-span-2">{screenWidthM}m (W) x {screenHeightM}m (H)</span>
+                                    <span className="font-semibold text-slate-500">Screen Size:</span>
+                                    <span className="col-span-2">
+                                        {screenWidthM}m x {screenHeightM}m <span className="text-slate-400">/ {(screenWidthM * 3.28084).toFixed(2)}ft x {(screenHeightM * 3.28084).toFixed(2)}ft</span>
+                                    </span>
                                     <span className="font-semibold text-slate-500">Quantity:</span> <span className="col-span-2">{screenQty} Nos</span>
                                 </div>
 
