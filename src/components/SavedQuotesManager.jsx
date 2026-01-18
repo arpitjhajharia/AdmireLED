@@ -211,7 +211,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                 </div>
 
                                 <div className="text-xs text-slate-400 mb-4">
-                                    {new Date(quote.updatedAt?.seconds * 1000).toLocaleDateString()}
+                                    {new Date(quote.updatedAt?.seconds * 1000).toLocaleString()}
                                 </div>
 
                                 {/* Screen Breakdown List */}
@@ -220,7 +220,9 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                         quote.allScreensData.calculations.map((calc, idx) => (
                                             <div key={idx} className="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
                                                 <span className="text-slate-600 dark:text-slate-300 font-medium">
-                                                    Screen #{idx + 1} <span className="text-slate-400 font-normal">({calc.finalWidth}x{calc.finalHeight}m ×{calc.screenQty})</span>
+                                                    Screen #{idx + 1} <span className="text-slate-400 font-normal">
+                                                        ({calc.finalWidth}x{calc.finalHeight}m / {(Number(calc.finalWidth) * 3.28084).toFixed(2)}x{(Number(calc.finalHeight) * 3.28084).toFixed(2)}ft ×{calc.screenQty})
+                                                    </span>
                                                 </span>
                                                 <span className="font-bold text-slate-800 dark:text-white">
                                                     {formatCurrency(calc.totalProjectSell, 'INR', true)}
