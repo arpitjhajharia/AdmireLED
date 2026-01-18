@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Edit, Plus, Trash2, X } from 'lucide-react';
+import { Box, Edit, Plus, Trash2, X, Layers } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency } from '../lib/utils';
 
@@ -15,6 +15,10 @@ const InventoryManager = ({ user, transactions = [] }) => {
         contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: ''
     });
     const [loading, setLoading] = React.useState(true);
+    // Batch Management State
+    const [showBatchModal, setShowBatchModal] = React.useState(false);
+    const [selectedItemForBatches, setSelectedItemForBatches] = React.useState(null);
+    const [batchForm, setBatchForm] = React.useState({ name: '', qty: '' });
 
     React.useEffect(() => {
         if (!user || !db) return;
@@ -122,6 +126,38 @@ const InventoryManager = ({ user, transactions = [] }) => {
         if (confirm("Delete this item?")) {
             await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').doc(id).delete();
         }
+    };
+
+    // --- Batch Management Functions ---
+    const openBatchModal = (item) => {
+        setSelectedItemForBatches(item);
+        setBatchForm({ name: '', qty: '' });
+        setShowBatchModal(true);
+    };
+
+    const handleAddBatch = async () => {
+        if (!batchForm.name || !batchForm.qty) return;
+
+        const currentBatches = selectedItemForBatches.batches || [];
+        const newBatches = [...currentBatches, { name: batchForm.name, qty: Number(batchForm.qty) }];
+
+        const updatedItem = { ...selectedItemForBatches, batches: newBatches };
+
+        // Update DB
+        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').doc(selectedItemForBatches.id).update(updatedItem);
+
+        setSelectedItemForBatches(updatedItem);
+        setBatchForm({ name: '', qty: '' });
+    };
+
+    const handleDeleteBatch = async (batchIndex) => {
+        const currentBatches = selectedItemForBatches.batches || [];
+        const newBatches = currentBatches.filter((_, i) => i !== batchIndex);
+
+        const updatedItem = { ...selectedItemForBatches, batches: newBatches };
+
+        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').doc(selectedItemForBatches.id).update(updatedItem);
+        setSelectedItemForBatches(updatedItem);
     };
 
     // Sorting Logic: 1. By Type (A-Z) -> 2. By Name (A-Z)
@@ -323,6 +359,9 @@ const InventoryManager = ({ user, transactions = [] }) => {
                                 </div>
 
                                 <div className="flex gap-2">
+                                    {item.type === 'module' && (
+                                        <button onClick={() => openBatchModal(item)} className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold flex justify-center items-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"><Layers size={14} /> Batches</button>
+                                    )}
                                     <button onClick={() => handleEdit(item)} className="flex-1 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold flex justify-center items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"><Edit size={14} /> Edit</button>
                                     <button onClick={() => handleDelete(item.id)} className="flex-1 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold flex justify-center items-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"><Trash2 size={14} /> Delete</button>
                                 </div>
@@ -348,12 +387,12 @@ const InventoryManager = ({ user, transactions = [] }) => {
                             {sortedItems.map(item => (
                                 <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${editingId === item.id ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
                                     <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs capitalize ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
-                                            item.type === 'cabinet' ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' :
-                                                item.type === 'card' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                                                    item.type === 'smps' ? 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300' :
-                                                        item.type === 'processor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
-                                                            item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
-                                                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                        item.type === 'cabinet' ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' :
+                                            item.type === 'card' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                                item.type === 'smps' ? 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300' :
+                                                    item.type === 'processor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
+                                                        item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                                            'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                         }`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
                                     <td className="px-4 py-3 dark:text-slate-200">
                                         <div className="font-medium">{item.brand} {item.model}</div>
@@ -393,6 +432,9 @@ const InventoryManager = ({ user, transactions = [] }) => {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 flex gap-2 justify-end">
+                                        {item.type === 'module' && (
+                                            <button onClick={() => openBatchModal(item)} title="Manage Batches" className="text-purple-500 hover:text-purple-700 p-1 bg-purple-50 dark:bg-purple-900/30 rounded"><Layers size={14} /></button>
+                                        )}
                                         <button onClick={() => handleEdit(item)} className="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 dark:bg-blue-900/30 rounded"><Edit size={14} /></button>
                                         <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:text-red-600 p-1 bg-red-50 dark:bg-red-900/30 rounded"><Trash2 size={14} /></button>
                                     </td>
@@ -403,6 +445,71 @@ const InventoryManager = ({ user, transactions = [] }) => {
                 </div>
                 {items.length === 0 && !loading && <div className="text-center py-12 text-slate-400 bg-white dark:bg-slate-800">No items found.</div>}
             </div>
+            {/* Batch Management Modal */}
+            {showBatchModal && selectedItemForBatches && (
+                <div className="fixed inset-0 z-50 bg-black/80 flex justify-center items-center p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-white">Batch Management</h3>
+                                <p className="text-xs text-slate-500">{selectedItemForBatches.brand} {selectedItemForBatches.model}</p>
+                            </div>
+                            <button onClick={() => setShowBatchModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                        </div>
+
+                        <div className="p-6">
+                            {/* Add New Batch */}
+                            <div className="flex gap-2 mb-6">
+                                <input
+                                    placeholder="Batch # (e.g. A1)"
+                                    className="flex-1 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                    value={batchForm.name}
+                                    onChange={e => setBatchForm({ ...batchForm, name: e.target.value })}
+                                />
+                                <input
+                                    type="number"
+                                    placeholder="Qty"
+                                    className="w-24 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                                    value={batchForm.qty}
+                                    onChange={e => setBatchForm({ ...batchForm, qty: e.target.value })}
+                                />
+                                <button onClick={handleAddBatch} className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded">
+                                    <Plus size={18} />
+                                </button>
+                            </div>
+
+                            {/* Batch List */}
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                <div className="grid grid-cols-3 bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase">
+                                    <div>Batch No</div>
+                                    <div className="text-center">Quantity</div>
+                                    <div className="text-right">Action</div>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto">
+                                    {(selectedItemForBatches.batches || []).length === 0 && (
+                                        <div className="p-4 text-center text-xs text-slate-400">No batches recorded.</div>
+                                    )}
+                                    {(selectedItemForBatches.batches || []).map((batch, idx) => (
+                                        <div key={idx} className="grid grid-cols-3 p-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 text-sm items-center">
+                                            <div className="font-medium text-slate-700 dark:text-slate-200">{batch.name}</div>
+                                            <div className="text-center font-bold text-slate-900 dark:text-white">{batch.qty}</div>
+                                            <div className="text-right">
+                                                <button onClick={() => handleDeleteBatch(idx)} className="text-red-400 hover:text-red-600 text-xs underline">Remove</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-3 bg-teal-50 dark:bg-teal-900/20 flex justify-between items-center border-t border-teal-100 dark:border-teal-800">
+                                    <span className="text-xs font-bold text-teal-800 dark:text-teal-400 uppercase">Total in Batches</span>
+                                    <span className="text-sm font-bold text-teal-700 dark:text-teal-300">
+                                        {(selectedItemForBatches.batches || []).reduce((acc, b) => acc + b.qty, 0)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
