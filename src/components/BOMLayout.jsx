@@ -44,29 +44,67 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                     </thead>
                     <tbody>
                         {detailedItems.map((item, i) => {
+                            // Find full item details from inventory
+                            const invItem = inventory.find(inv => inv.id === item.inventoryId);
                             let extraSpecs = null;
-                            if (item.id === 'modules' && moduleType) {
-                                extraSpecs = (
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
-                                        <span>Size: {moduleType.width}x{moduleType.height}mm</span>
-                                        <span>LED: {moduleType.ledType || '-'}</span>
-                                        <span>Bright: {moduleType.brightness} nits</span>
-                                        <span>Ref: {moduleType.refreshRate} Hz</span>
-                                        <span>Ang: {moduleType.viewAngleH}/{moduleType.viewAngleV}</span>
-                                        <span>IP: {moduleType.ipFront}/{moduleType.ipBack}</span>
-                                        <span>Pwr: {moduleType.avgPower}/{moduleType.maxPower} W</span>
-                                        <span>Wt: {moduleType.weight} kg</span>
-                                    </div>
-                                );
-                            }
-                            if (item.id === 'cabinets' && cabinetType) {
-                                extraSpecs = (
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
-                                        <span>Size: {cabinetType.width}x{cabinetType.height}mm</span>
-                                        <span>Mat: {cabinetType.material}</span>
-                                        <span>Weight: {cabinetType.weight} kg</span>
-                                    </div>
-                                );
+
+                            if (invItem) {
+                                if (invItem.type === 'module') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>LED: {invItem.ledType || '-'}</span>
+                                            <span>Bright: {invItem.brightness} nits</span>
+                                            <span>Ref: {invItem.refreshRate} Hz</span>
+                                            <span>Ang: {invItem.viewAngleH}/{invItem.viewAngleV}</span>
+                                            <span>IP: {invItem.ipFront}/{invItem.ipBack}</span>
+                                            <span>Pwr: {invItem.avgPower}/{invItem.maxPower} W</span>
+                                            <span>Wt: {invItem.weight} kg</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'cabinet') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>Mat: {invItem.material}</span>
+                                            <span>Weight: {invItem.weight} kg</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'ready') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>Mat: {invItem.material || '-'}</span>
+                                            <span>Bright: {invItem.brightness} nits</span>
+                                            <span>Ref: {invItem.refreshRate} Hz</span>
+                                            <span>IP: {invItem.ipFront}/{invItem.ipBack}</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'card') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.ports && <span>Ports: {invItem.ports}</span>}
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'smps' || invItem.type === 'psu') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.amps && <span>Amps: {invItem.amps}A</span>}
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'processor') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.ports && <span>Ports: {invItem.ports}</span>}
+                                        </div>
+                                    );
+                                }
                             }
                             return (
                                 <tr key={i}>
@@ -177,6 +215,30 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                                             <span>Bright: {invItem.brightness} nits</span>
                                             <span>Ref: {invItem.refreshRate} Hz</span>
                                             <span>IP: {invItem.ipFront}/{invItem.ipBack}</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'card') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.ports && <span>Ports: {invItem.ports}</span>}
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'smps' || invItem.type === 'psu') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.amps && <span>Amps: {invItem.amps}A</span>}
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'processor') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Brand: {invItem.brand}</span>
+                                            <span>Model: {invItem.model}</span>
+                                            {invItem.ports && <span>Ports: {invItem.ports}</span>}
                                         </div>
                                     );
                                 }
