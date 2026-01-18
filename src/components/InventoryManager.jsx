@@ -347,7 +347,14 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
                             {sortedItems.map(item => (
                                 <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${editingId === item.id ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
-                                    <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
+                                    <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs capitalize ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
+                                            item.type === 'cabinet' ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' :
+                                                item.type === 'card' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                                    item.type === 'smps' ? 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300' :
+                                                        item.type === 'processor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
+                                                            item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                        }`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
                                     <td className="px-4 py-3 dark:text-slate-200">
                                         <div className="font-medium">{item.brand} {item.model}</div>
                                         {item.vendor && <div className="text-[10px] text-teal-600 dark:text-teal-400 mt-0.5">{item.vendor}</div>}
