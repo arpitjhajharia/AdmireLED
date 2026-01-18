@@ -4,7 +4,7 @@ import { db, appId } from '../lib/firebase';
 import { formatCurrency, calculateBOM } from '../lib/utils';
 import PrintLayout from './PrintLayout';
 
-const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoadQuote }) => {
+const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoadQuote, readOnly = false }) => {
     const [quotes, setQuotes] = React.useState([]);
     const [viewQuote, setViewQuote] = React.useState(null);
 
@@ -252,22 +252,31 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                             </div>
 
                             {/* Action Buttons Grid */}
-                            <div className="grid grid-cols-5 border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800">
+                            <div className={`grid ${readOnly ? 'grid-cols-2' : 'grid-cols-5'} border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800`}>
                                 <button onClick={() => handleView(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="View">
                                     <Eye size={16} /> <span className="hidden sm:inline">View</span>
                                 </button>
-                                <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
-                                    <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
-                                </button>
+
+                                {!readOnly && (
+                                    <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                        <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
+                                    </button>
+                                )}
+
                                 <button onClick={() => handleDownloadExcel(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Excel">
                                     <Download size={16} /> <span className="hidden sm:inline">Excel</span>
                                 </button>
-                                <button onClick={() => onLoadQuote(quote, true)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Clone">
-                                    <Copy size={16} /> <span className="hidden sm:inline">Clone</span>
-                                </button>
-                                <button onClick={() => handleDelete(quote.id)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete">
-                                    <Trash2 size={16} /> <span className="hidden sm:inline">Del</span>
-                                </button>
+
+                                {!readOnly && (
+                                    <>
+                                        <button onClick={() => onLoadQuote(quote, true)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Clone">
+                                            <Copy size={16} /> <span className="hidden sm:inline">Clone</span>
+                                        </button>
+                                        <button onClick={() => handleDelete(quote.id)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete">
+                                            <Trash2 size={16} /> <span className="hidden sm:inline">Del</span>
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     );

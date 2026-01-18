@@ -25,4 +25,5 @@ if (!firebase.apps.length) {
 // Export the instances so other files can use them
 export const auth = firebase.auth();
 export const db = firebase.firestore();
+export const firebaseApp = app; // <--- ADD THIS LINE
 export const appId = 'admire-signage-external';

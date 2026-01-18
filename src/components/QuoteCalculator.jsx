@@ -435,7 +435,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
 };
 
 // --- Main Component ---
-const QuoteCalculator = ({ user, inventory, transactions, state, setState, exchangeRate, setExchangeRate, onSaveQuote }) => {
+const QuoteCalculator = ({ user, inventory, transactions, state, setState, exchangeRate, setExchangeRate, onSaveQuote, readOnly = false }) => {
     const {
         client, project, screenQty, targetWidth, targetHeight, unit,
         selectedIndoor, assemblyMode, sizingMode, margin, extras, overrides, editingRow
@@ -1226,12 +1226,14 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                             <button onClick={() => setShowPreview(true)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border border-slate-700 py-2">
                                 <Printer size={16} /> Print
                             </button>
-                            <button
-                                onClick={() => onSaveQuote(allScreensTotal ? allScreensTotal.totalProjectSell : calculation?.totalProjectSell)}
-                                className="flex-[2] bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 transition-all flex justify-center items-center gap-2 py-2"
-                            >
-                                <Save size={18} /> Save
-                            </button>
+                            {!readOnly && (
+                                <button
+                                    onClick={() => onSaveQuote(allScreensTotal ? allScreensTotal.totalProjectSell : calculation?.totalProjectSell)}
+                                    className="flex-[2] bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 transition-all flex justify-center items-center gap-2 py-2"
+                                >
+                                    <Save size={18} /> Save
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

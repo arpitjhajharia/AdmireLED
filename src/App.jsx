@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Sun, Moon } from 'lucide-react';
+import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut } from 'lucide-react';
 import { auth, db, appId } from './lib/firebase';
-import { calculateBOM, generateId, formatCurrency } from './lib/utils';
+import { calculateBOM, generateId } from './lib/utils';
 import { CONFIG } from './lib/config';
 
 // Components
@@ -9,16 +9,22 @@ import InventoryManager from './components/InventoryManager';
 import InventoryLedger from './components/InventoryLedger';
 import SavedQuotesManager from './components/SavedQuotesManager';
 import QuoteCalculator from './components/QuoteCalculator';
+import UserManager from './components/UserManager';
+import Login from './components/Login';
 
 const App = () => {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [view, setView] = useState('quote');
+  const [loading, setLoading] = useState(true);
+
+  // Existing state
   const [inventory, setInventory] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(CONFIG.DEFAULTS.EXCHANGE_RATE);
 
-  // Initial Calculator State
+  // --- ORIGINAL STATE FROM YOUR FILE ---
   const initialCalcState = {
     client: '', project: '', unit: 'm',
     screens: [
@@ -81,28 +87,45 @@ const App = () => {
 
   const [calcState, setCalcState] = useState(initialCalcState);
 
-  // 1. Auth Init
+  // 1. Auth & Role Init (NEW)
   useEffect(() => {
-    auth.onAuthStateChanged(setUser);
-    auth.signInAnonymously().catch(console.error);
+    const unsub = auth.onAuthStateChanged(async (u) => {
+      if (u) {
+        const username = u.email.split('@')[0].toLowerCase();
+        setUser({ ...u, username });
+
+        // Fetch Role
+        const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(username).get();
+        if (roleDoc.exists) {
+          setUserRole(roleDoc.data().role);
+        } else {
+          // Failsafe: 'admin' is super_admin, others default to labour
+          if (username === 'admin') setUserRole('super_admin');
+          else setUserRole('labour');
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+      }
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
-  // 2. Dark Mode Toggle
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-  }, [darkMode]);
-
-  // 3. Data Sync (Inventory & Transactions)
+  // 2. Data Sync
   useEffect(() => {
     if (!user || !db) return;
-    const unsubInv = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory')
-      .onSnapshot(snap => setInventory(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    const unsubTx = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions')
-      .onSnapshot(snap => setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubInv = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').onSnapshot(snap => setInventory(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubTx = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').onSnapshot(snap => setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     return () => { unsubInv(); unsubTx(); };
   }, [user]);
 
-  // Handlers
+  // 3. Dark Mode
+  useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
+
+  const handleLogout = () => auth.signOut();
+
+  // --- ORIGINAL HANDLERS RESTORED EXACTLY ---
   const handleSaveQuote = async (finalAmount) => {
     if (!calcState.client || !calcState.project) return alert("Please enter Client and Project names.");
 
@@ -167,30 +190,40 @@ const App = () => {
     setView('quote');
   };
 
-  if (!user) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>;
+  if (!user) return <Login />;
+
+  // --- ROLE BASED PERMISSIONS ---
+  const showUsersTab = ['super_admin'].includes(userRole);
+  // Calculator: Read Only for Labour & Supervisor
+  const isBOMReadOnly = ['labour', 'supervisor'].includes(userRole);
+  // Inventory: Read Only for Labour & Supervisor
+  const isInventoryReadOnly = ['labour', 'supervisor'].includes(userRole);
+  // Ledger: Read Only for Labour (Supervisor CAN write)
+  const isLedgerReadOnly = ['labour'].includes(userRole);
 
   return (
-    <div className="min-h-screen no-print pb-20 bg-slate-50 dark:bg-slate-900 transition-colors font-sans">
-      {/* Main Header */}
+    <div className="min-h-screen no-print pb-20 bg-slate-50 dark:bg-slate-900 transition-colors font-sans text-slate-900 dark:text-slate-100">
       <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 px-4 md:px-6 h-16 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <img src="/AdmireLED/logo.png" alt="Logo" className="h-10 w-auto" />
         </div>
 
         <div className="flex gap-4 items-center">
-          {/* Desktop Navigation */}
           <div className="hidden md:flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
             <button onClick={() => setView('quote')} className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
             <button onClick={() => setView('inventory')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
             <button onClick={() => setView('ledger')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
             <button onClick={() => setView('saved')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
+            {showUsersTab && <button onClick={() => setView('users')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'users' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Users</button>}
           </div>
 
           <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded px-2 py-1" title="Exchange rate for USD items">
-              <span className="text-[10px] text-slate-500 font-bold mr-1">$1=</span>
-              <input type="number" value={exchangeRate} onChange={e => setExchangeRate(Number(e.target.value))} className="w-8 bg-transparent text-xs outline-none font-bold dark:text-white" />
+            <div className="text-right mr-2 hidden lg:block">
+              <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{userRole?.replace('_', ' ')}</div>
+              <div className="text-[10px] text-slate-400">{user.username}</div>
             </div>
+            <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-slate-400 hover:text-red-500 rounded-lg transition-colors"><LogOut size={18} /></button>
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -198,40 +231,30 @@ const App = () => {
         </div>
       </nav>
 
-      {/* Mobile Navigation Tabs (NEW) */}
-      <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-16 z-40 flex shadow-sm">
-        <button onClick={() => setView('quote')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'quote' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
-          Calculator
-        </button>
-        <button onClick={() => setView('inventory')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'inventory' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
-          Components
-        </button>
-        <button onClick={() => setView('ledger')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'ledger' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
-          Stock
-        </button>
-        <button onClick={() => setView('saved')} className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${view === 'saved' ? 'border-teal-600 text-teal-600 dark:text-teal-400' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
-          Quotes
-        </button>
+      {/* Mobile Tabs */}
+      <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-16 z-40 flex shadow-sm overflow-x-auto">
+        <button onClick={() => setView('quote')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'quote' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Calculator</button>
+        <button onClick={() => setView('inventory')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'inventory' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Components</button>
+        <button onClick={() => setView('ledger')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'ledger' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Stock</button>
+        <button onClick={() => setView('saved')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'saved' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Quotes</button>
+        {showUsersTab && <button onClick={() => setView('users')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'users' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Users</button>}
       </div>
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6">
-        {view === 'inventory' && <InventoryManager user={user} transactions={transactions} />}
-        {view === 'ledger' && <InventoryLedger user={user} inventory={inventory} transactions={transactions} />}
-        {view === 'saved' && <SavedQuotesManager user={user} inventory={inventory} transactions={transactions} exchangeRate={exchangeRate} onLoadQuote={handleLoadQuote} />}
+        {view === 'inventory' && <InventoryManager user={user} transactions={transactions} readOnly={isInventoryReadOnly} />}
+        {view === 'ledger' && <InventoryLedger user={user} inventory={inventory} transactions={transactions} readOnly={isLedgerReadOnly} />}
+        {view === 'saved' && <SavedQuotesManager user={user} inventory={inventory} transactions={transactions} exchangeRate={exchangeRate} onLoadQuote={handleLoadQuote} readOnly={isBOMReadOnly} />}
+        {view === 'users' && showUsersTab && <UserManager />}
         {view === 'quote' && (
           <QuoteCalculator
-            user={user}
-            inventory={inventory}
-            transactions={transactions}
-            state={calcState}
-            setState={setCalcState}
-            exchangeRate={exchangeRate}
-            setExchangeRate={setExchangeRate}
+            user={user} inventory={inventory} transactions={transactions}
+            state={calcState} setState={setCalcState}
+            exchangeRate={exchangeRate} setExchangeRate={setExchangeRate}
             onSaveQuote={handleSaveQuote}
+            readOnly={isBOMReadOnly}
           />
         )}
       </main>
-
     </div>
   );
 };

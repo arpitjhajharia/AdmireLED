@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Archive, Trash2, Edit, X } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 
-const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
+const InventoryLedger = ({ user, inventory = [], transactions = [], readOnly = false }) => {
     // 1. Updated State to include 'batch'
     const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '', batch: '' });
     const [editingId, setEditingId] = useState(null);
@@ -52,70 +52,72 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
             </div>
 
             {/* Add/Edit Transaction Form */}
-            <div className={`p-4 rounded-lg border mb-6 transition-colors ${editingId ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-700'}`}>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{editingId ? 'Edit Transaction' : 'New Transaction'}</h3>
-                    {editingId && <button onClick={handleCancel} className="text-xs text-red-500 flex items-center gap-1"><X size={14} /> Cancel</button>}
-                </div>
+            {!readOnly && (
+                <div className={`p-4 rounded-lg border mb-6 transition-colors ${editingId ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-700'}`}>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{editingId ? 'Edit Transaction' : 'New Transaction'}</h3>
+                        {editingId && <button onClick={handleCancel} className="text-xs text-red-500 flex items-center gap-1"><X size={14} /> Cancel</button>}
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Date & Action</label>
-                        <div className="flex gap-2">
-                            <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} className="flex-1 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
-                            <div className="flex rounded overflow-hidden border border-slate-200 dark:border-slate-600">
-                                <button
-                                    onClick={() => setNewTx({ ...newTx, type: 'in' })}
-                                    className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'in' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
-                                >
-                                    + STOCK IN
-                                </button>
-                                <button
-                                    onClick={() => setNewTx({ ...newTx, type: 'out' })}
-                                    className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'out' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
-                                >
-                                    - STOCK OUT
-                                </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Date & Action</label>
+                            <div className="flex gap-2">
+                                <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} className="flex-1 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
+                                <div className="flex rounded overflow-hidden border border-slate-200 dark:border-slate-600">
+                                    <button
+                                        onClick={() => setNewTx({ ...newTx, type: 'in' })}
+                                        className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'in' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
+                                    >
+                                        + STOCK IN
+                                    </button>
+                                    <button
+                                        onClick={() => setNewTx({ ...newTx, type: 'out' })}
+                                        className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'out' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
+                                    >
+                                        - STOCK OUT
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Component</label>
-                        <select value={newTx.itemId} onChange={e => setNewTx({ ...newTx, itemId: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white">
-                            <option value="">Select Item...</option>
-                            {inventory.sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model)).map(i => (
-                                <option key={i.id} value={i.id}>{i.brand} {i.model} ({i.type})</option>
-                            ))}
-                        </select>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Component</label>
+                            <select value={newTx.itemId} onChange={e => setNewTx({ ...newTx, itemId: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                                <option value="">Select Item...</option>
+                                {inventory.sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model)).map(i => (
+                                    <option key={i.id} value={i.id}>{i.brand} {i.model} ({i.type})</option>
+                                ))}
+                            </select>
 
-                        {/* 2. Conditional Batch Input for Modules */}
-                        {inventory.find(i => i.id === newTx.itemId)?.type === 'module' && (
-                            <input
-                                type="text"
-                                placeholder="Batch No. (e.g. BATCH-A)"
-                                value={newTx.batch || ''}
-                                onChange={e => setNewTx({ ...newTx, batch: e.target.value })}
-                                className="w-full mt-2 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white font-bold text-purple-600 border-purple-200 focus:border-purple-500 focus:ring-purple-500"
-                            />
-                        )}
+                            {/* 2. Conditional Batch Input for Modules */}
+                            {inventory.find(i => i.id === newTx.itemId)?.type === 'module' && (
+                                <input
+                                    type="text"
+                                    placeholder="Batch No. (e.g. BATCH-A)"
+                                    value={newTx.batch || ''}
+                                    onChange={e => setNewTx({ ...newTx, batch: e.target.value })}
+                                    className="w-full mt-2 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white font-bold text-purple-600 border-purple-200 focus:border-purple-500 focus:ring-purple-500"
+                                />
+                            )}
+                        </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Quantity</label>
+                            <input type="number" placeholder="Qty" value={newTx.qty} onChange={e => setNewTx({ ...newTx, qty: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Location / Source</label>
+                            <input type="text" placeholder="Source/Loc" value={newTx.remarks} onChange={e => setNewTx({ ...newTx, remarks: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
+                        </div>
+                    </div>
+
+                    <button onClick={handleAddTx} className={`w-full md:w-auto text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
+                        {editingId ? 'Update Transaction' : 'Add Transaction'}
+                    </button>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Quantity</label>
-                        <input type="number" placeholder="Qty" value={newTx.qty} onChange={e => setNewTx({ ...newTx, qty: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Location / Source</label>
-                        <input type="text" placeholder="Source/Loc" value={newTx.remarks} onChange={e => setNewTx({ ...newTx, remarks: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
-                    </div>
-                </div>
-
-                <button onClick={handleAddTx} className={`w-full md:w-auto text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
-                    {editingId ? 'Update Transaction' : 'Add Transaction'}
-                </button>
-            </div>
+            )}
 
             {/* History List */}
             <div className="mt-8">
@@ -147,10 +149,12 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                     <span className={`block text-lg font-bold ${tx.type === 'in' ? 'text-green-600' : 'text-red-500'}`}>
                                         {tx.type === 'in' ? '+' : '-'}{tx.qty}
                                     </span>
-                                    <div className="flex gap-3 justify-end mt-1">
-                                        <button onClick={() => handleEdit(tx)} className="text-[10px] text-blue-500 hover:text-blue-700 underline">Edit</button>
-                                        <button onClick={() => handleDelete(tx.id)} className="text-[10px] text-red-400 hover:text-red-600 underline">Delete</button>
-                                    </div>
+                                    {!readOnly && (
+                                        <div className="flex gap-3 justify-end mt-1">
+                                            <button onClick={() => handleEdit(tx)} className="text-[10px] text-blue-500 hover:text-blue-700 underline">Edit</button>
+                                            <button onClick={() => handleDelete(tx.id)} className="text-[10px] text-red-400 hover:text-red-600 underline">Delete</button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -194,10 +198,12 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                         </td>
                                         <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{tx.remarks}</td>
                                         <td className="px-4 py-3 text-right">
-                                            <div className="flex justify-end gap-1">
-                                                <button onClick={() => handleEdit(tx)} className="text-blue-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"><Edit size={14} /></button>
-                                                <button onClick={() => handleDelete(tx.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"><Trash2 size={14} /></button>
-                                            </div>
+                                            {!readOnly && (
+                                                <div className="flex justify-end gap-1">
+                                                    <button onClick={() => handleEdit(tx)} className="text-blue-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"><Edit size={14} /></button>
+                                                    <button onClick={() => handleDelete(tx.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"><Trash2 size={14} /></button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 );
