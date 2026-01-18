@@ -3,7 +3,8 @@ import { Archive, Trash2, Edit, X } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 
 const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
-    const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+    // 1. Updated State to include 'batch'
+    const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '', batch: '' });
     const [editingId, setEditingId] = useState(null);
 
     const handleAddTx = async () => {
@@ -17,7 +18,8 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
             } else {
                 await ref.add({ ...newTx, qty: Number(newTx.qty), createdAt: new Date() });
             }
-            setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+            // Reset form including batch
+            setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '', batch: '' });
         } catch (e) { console.error(e); }
     };
 
@@ -29,7 +31,8 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
 
     const handleCancel = () => {
         setEditingId(null);
-        setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+        // Reset form including batch
+        setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '', batch: '' });
     };
 
     const handleDelete = async (id) => {
@@ -84,6 +87,17 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                 <option key={i.id} value={i.id}>{i.brand} {i.model} ({i.type})</option>
                             ))}
                         </select>
+
+                        {/* 2. Conditional Batch Input for Modules */}
+                        {inventory.find(i => i.id === newTx.itemId)?.type === 'module' && (
+                            <input
+                                type="text"
+                                placeholder="Batch No. (e.g. BATCH-A)"
+                                value={newTx.batch || ''}
+                                onChange={e => setNewTx({ ...newTx, batch: e.target.value })}
+                                className="w-full mt-2 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white font-bold text-purple-600 border-purple-200 focus:border-purple-500 focus:ring-purple-500"
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -122,6 +136,8 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                     </div>
                                     <div className="font-bold text-slate-800 dark:text-white text-sm mb-0.5">
                                         {item.brand} {item.model}
+                                        {/* 3. Batch Tag in Mobile View */}
+                                        {tx.batch && <span className="ml-2 inline-block bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 text-[10px] px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800">{tx.batch}</span>}
                                     </div>
                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                         {tx.remarks || '-'}
@@ -167,7 +183,11 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                                                 {tx.type.toUpperCase()}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 font-medium dark:text-white">{item.brand} {item.model}</td>
+                                        <td className="px-4 py-3 font-medium dark:text-white">
+                                            {item.brand} {item.model}
+                                            {/* 4. Batch Tag in Desktop Table */}
+                                            {tx.batch && <div className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 py-0.5 rounded w-fit mt-1 font-bold border border-purple-200 dark:border-purple-800">{tx.batch}</div>}
+                                        </td>
                                         <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{item.type}</td>
                                         <td className={`px-4 py-3 text-center font-bold ${tx.type === 'in' ? 'text-green-600' : 'text-red-500'}`}>
                                             {tx.type === 'in' ? '+' : '-'}{tx.qty}

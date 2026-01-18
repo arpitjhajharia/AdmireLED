@@ -135,29 +135,43 @@ const InventoryManager = ({ user, transactions = [] }) => {
         setShowBatchModal(true);
     };
 
-    const handleAddBatch = async () => {
-        if (!batchForm.name || !batchForm.qty) return;
+    // Helper to calculate batches from Ledger Transactions
+    const getBatchBalances = (itemId) => {
+        const itemTransactions = transactions.filter(t => t.itemId === itemId);
+        const batchMap = {};
 
-        const currentBatches = selectedItemForBatches.batches || [];
-        const newBatches = [...currentBatches, { name: batchForm.name, qty: Number(batchForm.qty) }];
+        // 1. Group by Batch
+        itemTransactions.forEach(tx => {
+            const batchName = tx.batch || 'Unbatched';
+            const qty = tx.type === 'in' ? Number(tx.qty) : -Number(tx.qty);
 
-        const updatedItem = { ...selectedItemForBatches, batches: newBatches };
+            if (!batchMap[batchName]) batchMap[batchName] = 0;
+            batchMap[batchName] += qty;
+        });
 
-        // Update DB
-        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').doc(selectedItemForBatches.id).update(updatedItem);
-
-        setSelectedItemForBatches(updatedItem);
-        setBatchForm({ name: '', qty: '' });
+        // 2. Convert to Array and Filter out Zero balances
+        return Object.entries(batchMap)
+            .map(([name, qty]) => ({ name, qty }))
+            .filter(b => b.qty !== 0) // Optional: Hide zero balance batches
+            .sort((a, b) => b.qty - a.qty); // Sort highest stock first
     };
 
-    const handleDeleteBatch = async (batchIndex) => {
-        const currentBatches = selectedItemForBatches.batches || [];
-        const newBatches = currentBatches.filter((_, i) => i !== batchIndex);
+    // Add Batch = Create a "Stock In" Transaction
+    const handleAddBatchTx = async () => {
+        if (!batchForm.name || !batchForm.qty) return;
 
-        const updatedItem = { ...selectedItemForBatches, batches: newBatches };
-
-        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').doc(selectedItemForBatches.id).update(updatedItem);
-        setSelectedItemForBatches(updatedItem);
+        try {
+            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').add({
+                date: new Date().toISOString().split('T')[0],
+                type: 'in',
+                itemId: selectedItemForBatches.id,
+                qty: Number(batchForm.qty),
+                batch: batchForm.name, // Save the batch to the ledger
+                remarks: 'Added via Inventory Manager',
+                createdAt: new Date()
+            });
+            setBatchForm({ name: '', qty: '' });
+        } catch (e) { console.error(e); }
     };
 
     // Sorting Logic: 1. By Type (A-Z) -> 2. By Name (A-Z)
@@ -473,36 +487,34 @@ const InventoryManager = ({ user, transactions = [] }) => {
                                     value={batchForm.qty}
                                     onChange={e => setBatchForm({ ...batchForm, qty: e.target.value })}
                                 />
-                                <button onClick={handleAddBatch} className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded">
+                                <button onClick={handleAddBatchTx} className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded">
                                     <Plus size={18} />
                                 </button>
                             </div>
 
-                            {/* Batch List */}
+                            {/* Batch List (Derived from Ledger) */}
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                <div className="grid grid-cols-3 bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase">
+                                <div className="grid grid-cols-2 bg-slate-100 dark:bg-slate-800 p-2 text-xs font-bold text-slate-500 uppercase">
                                     <div>Batch No</div>
-                                    <div className="text-center">Quantity</div>
-                                    <div className="text-right">Action</div>
+                                    <div className="text-right">Current Balance</div>
                                 </div>
                                 <div className="max-h-60 overflow-y-auto">
-                                    {(selectedItemForBatches.batches || []).length === 0 && (
-                                        <div className="p-4 text-center text-xs text-slate-400">No batches recorded.</div>
+                                    {getBatchBalances(selectedItemForBatches.id).length === 0 && (
+                                        <div className="p-4 text-center text-xs text-slate-400">No active batches found in ledger.</div>
                                     )}
-                                    {(selectedItemForBatches.batches || []).map((batch, idx) => (
-                                        <div key={idx} className="grid grid-cols-3 p-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 text-sm items-center">
-                                            <div className="font-medium text-slate-700 dark:text-slate-200">{batch.name}</div>
-                                            <div className="text-center font-bold text-slate-900 dark:text-white">{batch.qty}</div>
-                                            <div className="text-right">
-                                                <button onClick={() => handleDeleteBatch(idx)} className="text-red-400 hover:text-red-600 text-xs underline">Remove</button>
+                                    {getBatchBalances(selectedItemForBatches.id).map((batch, idx) => (
+                                        <div key={idx} className="grid grid-cols-2 p-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 text-sm items-center">
+                                            <div className="font-medium text-slate-700 dark:text-slate-200">
+                                                {batch.name === 'Unbatched' ? <span className="italic text-slate-400">Unbatched Stock</span> : batch.name}
                                             </div>
+                                            <div className="text-right font-bold text-slate-900 dark:text-white">{batch.qty}</div>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="p-3 bg-teal-50 dark:bg-teal-900/20 flex justify-between items-center border-t border-teal-100 dark:border-teal-800">
                                     <span className="text-xs font-bold text-teal-800 dark:text-teal-400 uppercase">Total in Batches</span>
                                     <span className="text-sm font-bold text-teal-700 dark:text-teal-300">
-                                        {(selectedItemForBatches.batches || []).reduce((acc, b) => acc + b.qty, 0)}
+                                        {getBatchBalances(selectedItemForBatches.id).reduce((acc, b) => acc + b.qty, 0)}
                                     </span>
                                 </div>
                             </div>
