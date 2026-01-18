@@ -25,7 +25,7 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                         </h3>
                         <div className="grid grid-cols-4 gap-2 mt-2 text-xs text-teal-700 dark:text-teal-400">
                             <div><span className="font-semibold">Target:</span> {screenConfig.targetWidth}×{screenConfig.targetHeight}{screenConfig.unit || 'm'}</div>
-                            <div><span className="font-semibold">Final:</span> {finalWidth}m × {finalHeight}m</div>
+                            <div><span className="font-semibold">Final:</span> {finalWidth}m x {finalHeight}m <span className="opacity-75">/ {(Number(finalWidth) * 3.28084).toFixed(2)}ft x {(Number(finalHeight) * 3.28084).toFixed(2)}ft</span></div>
                             <div><span className="font-semibold">Quantity:</span> {screenQty} screens</div>
                             {moduleType && <div><span className="font-semibold">Pitch:</span> P{moduleType.pitch}</div>}
                         </div>
@@ -305,7 +305,7 @@ const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) 
                             )}
                             {!isMultiScreen && data.moduleType && (
                                 <p className="text-xs text-slate-500 mt-1">
-                                    P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'} • {data.finalWidth}m x {data.finalHeight}m • Qty: {data.screenQty}
+                                    P{data.moduleType.pitch} {data.moduleType.indoor ? 'Indoor' : 'Outdoor'} • {data.finalWidth}m x {data.finalHeight}m / {(Number(data.finalWidth) * 3.28084).toFixed(2)}ft x {(Number(data.finalHeight) * 3.28084).toFixed(2)}ft • Qty: {data.screenQty}
                                 </p>
                             )}
                         </div>
