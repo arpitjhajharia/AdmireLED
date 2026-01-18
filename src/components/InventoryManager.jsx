@@ -34,7 +34,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                 return alert("Please fill all compulsory (*) fields.");
             }
         } else if (newItem.type === 'cabinet') {
-            if (!newItem.material || !newItem.model || !newItem.price || !newItem.vendor || !newItem.width || !newItem.height) {
+            if (!newItem.brand || !newItem.material || !newItem.model || !newItem.price || !newItem.width || !newItem.height) {
                 return alert("Please fill all compulsory (*) fields.");
             }
         } else if (newItem.type === 'card' || newItem.type === 'processor') {
@@ -186,7 +186,7 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         </>
                     )}
 
-                    <input placeholder={(newItem.type === 'module' || newItem.type === 'ready' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Brand*" : "Brand"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brand} onChange={e => setNewItem({ ...newItem, brand: e.target.value })} />
+                    <input placeholder={(newItem.type === 'module' || newItem.type === 'ready' || newItem.type === 'cabinet' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'smps') ? "Brand*" : "Brand"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brand} onChange={e => setNewItem({ ...newItem, brand: e.target.value })} />
                     <input placeholder={(newItem.type === 'module' || newItem.type === 'ready' || newItem.type === 'cabinet' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Model/SKU*" : "Model"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.model} onChange={e => setNewItem({ ...newItem, model: e.target.value })} />
 
                     <div className="flex gap-2 items-center col-span-2 md:col-span-1">
@@ -207,7 +207,9 @@ const InventoryManager = ({ user, transactions = [] }) => {
                         </div>
                     </div>
 
-                    <input placeholder={(newItem.type === 'cabinet' || newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'psu') ? "Vendor*" : "Vendor"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.vendor} onChange={e => setNewItem({ ...newItem, vendor: e.target.value })} />
+                    {newItem.type !== 'cabinet' && (
+                        <input placeholder={(newItem.type === 'card' || newItem.type === 'processor' || newItem.type === 'smps') ? "Vendor*" : "Vendor"} className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.vendor} onChange={e => setNewItem({ ...newItem, vendor: e.target.value })} />
+                    )}
 
                     {(newItem.type === 'card' || newItem.type === 'processor') && (
                         <input placeholder="Ports (Optional)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ports} onChange={e => setNewItem({ ...newItem, ports: e.target.value })} />
