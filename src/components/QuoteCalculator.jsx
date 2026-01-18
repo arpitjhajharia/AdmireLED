@@ -674,7 +674,7 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
                             <div className="flex items-center gap-4">
                                 <h2 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
-                                    <FileText size={20} className="text-teal-600" /> Cost Sheet (BOM)
+                                    <FileText size={20} className="text-teal-600" /> BOM
                                 </h2>
                             </div>
                             <div className="flex gap-2">
@@ -1195,12 +1195,20 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                     : (calculation ? formatCurrency(calculation.totalProjectSell, 'INR') : '-')}
                             </span>
                         </div>
-                        <button
-                            onClick={() => onSaveQuote(allScreensTotal ? allScreensTotal.totalProjectSell : calculation?.totalProjectSell)}
-                            className="w-full mt-4 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 transition-all flex justify-center items-center gap-2"
-                        >
-                            <Save size={18} /> Save Quote
-                        </button>
+                        <div className="flex gap-2 mt-4">
+                            <button onClick={() => setShowBOM(true)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border border-slate-700 py-2">
+                                <FileText size={16} className="text-blue-400" /> BOM
+                            </button>
+                            <button onClick={() => setShowPreview(true)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border border-slate-700 py-2">
+                                <Printer size={16} /> Print
+                            </button>
+                            <button
+                                onClick={() => onSaveQuote(allScreensTotal ? allScreensTotal.totalProjectSell : calculation?.totalProjectSell)}
+                                className="flex-[2] bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 transition-all flex justify-center items-center gap-2 py-2"
+                            >
+                                <Save size={18} /> Save
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1212,15 +1220,6 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                     ) : (
                         <div className="text-slate-500 flex flex-col items-center"><Monitor size={32} className="mb-2 opacity-50" /><span>Enter dimensions</span></div>
                     )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setShowBOM(true)} className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-center justify-center gap-1 transition-colors">
-                        <FileText size={16} className="text-blue-500" /> <span className="text-[10px]">BOM</span>
-                    </button>
-                    <button onClick={() => setShowPreview(true)} className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-center justify-center gap-1 transition-colors">
-                        <Printer size={16} /> <span className="text-[10px]">Print</span>
-                    </button>
                 </div>
             </div>
         </div>
