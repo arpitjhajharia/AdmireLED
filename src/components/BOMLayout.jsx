@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { formatCurrency, generateId } from '../lib/utils';
 
-const BOMLayout = ({ data, allScreensData }) => {
+const BOMLayout = ({ data, allScreensData, inventory = [], transactions = [] }) => {
     // 1. Data Validation
     if (!data && !allScreensData) return null;
 
@@ -88,29 +88,31 @@ const BOMLayout = ({ data, allScreensData }) => {
     };
 
     // 3. Helper to render consolidated BOM
+    // 3. Helper to render consolidated BOM (Enhanced)
     const renderConsolidatedBOM = () => {
         if (!isMultiScreen) return null;
 
         const consolidatedItems = {};
+
+        // Helper to get stock
+        const getStock = (id) => transactions ? transactions.filter(t => t.itemId === id).reduce((acc, t) => acc + (t.type === 'in' ? Number(t.qty) : -Number(t.qty)), 0) : 0;
+
         allScreensData.calculations.forEach((calc, screenIndex) => {
             calc.detailedItems.forEach(item => {
-                const key = `${item.inventoryId || item.id}_${item.spec}`;
+                // Key by Inventory ID if possible, else by name+spec
+                const key = item.inventoryId ? item.inventoryId : `${item.name}_${item.spec}`;
+
                 if (!consolidatedItems[key]) {
                     consolidatedItems[key] = {
                         name: item.name,
                         spec: item.spec,
-                        totalQty: 0,
-                        screens: []
+                        inventoryId: item.inventoryId,
+                        id: item.id, // e.g. 'modules', 'cabinets'
+                        totalQty: 0
                     };
                 }
                 const itemTotalQty = item.qty * calc.screenQty;
                 consolidatedItems[key].totalQty += itemTotalQty;
-                consolidatedItems[key].screens.push({
-                    screenIndex: screenIndex + 1,
-                    qtyPerScreen: item.qty,
-                    screenQty: calc.screenQty,
-                    total: itemTotalQty
-                });
             });
         });
 
@@ -118,9 +120,11 @@ const BOMLayout = ({ data, allScreensData }) => {
 
         return (
             <div className="mt-8 break-inside-avoid print-break-avoid border-t-4 border-slate-800 pt-6">
-                <div className="bg-slate-800 text-white p-3 rounded-t-lg mb-0">
-                    <h3 className="font-bold text-lg uppercase tracking-wide">Consolidated Bill of Materials</h3>
-                    <p className="text-xs text-slate-300 mt-1">Combined quantities across all screen configurations</p>
+                <div className="bg-slate-800 text-white p-3 rounded-t-lg mb-0 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-lg uppercase tracking-wide">Consolidated Bill of Materials</h3>
+                        <p className="text-xs text-slate-300 mt-1">Combined quantities across all screen configurations</p>
+                    </div>
                 </div>
 
                 <table className="w-full border-collapse border border-slate-300 text-[10px]">
@@ -129,29 +133,75 @@ const BOMLayout = ({ data, allScreensData }) => {
                             <th className="p-2 border border-slate-600 text-left w-10">#</th>
                             <th className="p-2 border border-slate-600 text-left w-32">Component</th>
                             <th className="p-2 border border-slate-600 text-left">Specification</th>
-                            <th className="p-2 border border-slate-600 text-center w-20">Total Qty</th>
-                            <th className="p-2 border border-slate-600 text-left">Usage Breakdown</th>
+                            <th className="p-2 border border-slate-600 text-center w-16">Stock</th>
+                            <th className="p-2 border border-slate-600 text-center w-16">Required</th>
+                            <th className="p-2 border border-slate-600 text-center w-16">Balance</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {consolidatedArray.map((item, i) => (
-                            <tr key={i} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
-                                <td className="p-2 border border-slate-300 text-center">{i + 1}</td>
-                                <td className="p-2 border border-slate-300 font-bold align-top">{item.name}</td>
-                                <td className="p-2 border border-slate-300 align-top">{item.spec}</td>
-                                <td className="p-2 border border-slate-300 text-center font-bold align-top text-teal-700">{item.totalQty}</td>
-                                <td className="p-2 border border-slate-300 align-top">
-                                    <div className="text-[9px] text-slate-600">
-                                        {item.screens.map((screen, idx) => (
-                                            <span key={idx}>
-                                                Screen #{screen.screenIndex}: {screen.total} units
-                                                {idx < item.screens.length - 1 ? ' • ' : ''}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                        {consolidatedArray.map((item, i) => {
+                            const stock = item.inventoryId ? getStock(item.inventoryId) : 0;
+                            const balance = stock - item.totalQty;
+
+                            // Retrieve full details from inventory for specs
+                            const invItem = item.inventoryId ? inventory.find(inv => inv.id === item.inventoryId) : null;
+
+                            let extraSpecs = null;
+                            if (invItem) {
+                                if (invItem.type === 'module') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>LED: {invItem.ledType || '-'}</span>
+                                            <span>Bright: {invItem.brightness} nits</span>
+                                            <span>Ref: {invItem.refreshRate} Hz</span>
+                                            <span>Ang: {invItem.viewAngleH}/{invItem.viewAngleV}</span>
+                                            <span>IP: {invItem.ipFront}/{invItem.ipBack}</span>
+                                            <span>Pwr: {invItem.avgPower}/{invItem.maxPower} W</span>
+                                            <span>Wt: {invItem.weight} kg</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'cabinet') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>Mat: {invItem.material}</span>
+                                            <span>Weight: {invItem.weight} kg</span>
+                                        </div>
+                                    );
+                                } else if (invItem.type === 'ready') {
+                                    extraSpecs = (
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-[9px] text-slate-500">
+                                            <span>Size: {invItem.width}x{invItem.height}mm</span>
+                                            <span>Mat: {invItem.material || '-'}</span>
+                                            <span>Bright: {invItem.brightness} nits</span>
+                                            <span>Ref: {invItem.refreshRate} Hz</span>
+                                            <span>IP: {invItem.ipFront}/{invItem.ipBack}</span>
+                                        </div>
+                                    );
+                                }
+                            }
+
+                            return (
+                                <tr key={i} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
+                                    <td className="p-2 border border-slate-300 text-center">{i + 1}</td>
+                                    <td className="p-2 border border-slate-300 font-bold align-top">{item.name}</td>
+                                    <td className="p-2 border border-slate-300 align-top">
+                                        <div className="font-semibold">{item.spec}</div>
+                                        {extraSpecs}
+                                    </td>
+                                    <td className="p-2 border border-slate-300 text-center font-medium text-slate-600 align-top">
+                                        {item.inventoryId ? stock : '-'}
+                                    </td>
+                                    <td className="p-2 border border-slate-300 text-center font-bold align-top text-slate-800">
+                                        {item.totalQty}
+                                    </td>
+                                    <td className={`p-2 border border-slate-300 text-center font-bold align-top ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.inventoryId ? balance : '-'}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
 

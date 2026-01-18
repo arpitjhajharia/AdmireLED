@@ -701,6 +701,8 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                         unit: unit
                                     }))
                                 } : null}
+                                inventory={inventory}
+                                transactions={transactions}
                             />
                         </div>
                     </div>
