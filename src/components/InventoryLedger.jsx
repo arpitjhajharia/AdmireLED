@@ -60,10 +60,20 @@ const InventoryLedger = ({ user, inventory = [], transactions = [] }) => {
                         <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Date & Action</label>
                         <div className="flex gap-2">
                             <input type="date" value={newTx.date} onChange={e => setNewTx({ ...newTx, date: e.target.value })} className="flex-1 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white" />
-                            <select value={newTx.type} onChange={e => setNewTx({ ...newTx, type: e.target.value })} className="w-28 p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white font-bold">
-                                <option value="in">Stock IN</option>
-                                <option value="out">Stock OUT</option>
-                            </select>
+                            <div className="flex rounded overflow-hidden border border-slate-200 dark:border-slate-600">
+                                <button
+                                    onClick={() => setNewTx({ ...newTx, type: 'in' })}
+                                    className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'in' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
+                                >
+                                    + STOCK IN
+                                </button>
+                                <button
+                                    onClick={() => setNewTx({ ...newTx, type: 'out' })}
+                                    className={`flex-1 py-2 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${newTx.type === 'out' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
+                                >
+                                    - STOCK OUT
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div>
