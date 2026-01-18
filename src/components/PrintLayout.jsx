@@ -188,19 +188,19 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                         <div className="font-bold text-slate-800">GST</div>
                         <div>Extra as applicable (currently {CONFIG.DEFAULTS.GST_RATE}%)</div>
                         <div className="font-bold text-slate-800">WARRANTY</div>
-                        <div className="text-justify leading-snug">{CONFIG.TEXT.WARRANTY}</div>
+                        <div className="text-justify leading-snug">{terms.warranty || CONFIG.TEXT.WARRANTY}</div>
                     </div>
                 </div>
 
                 <h3 className="font-bold text-slate-700 uppercase border-b border-slate-300 mt-4 mb-2 pb-1">Client's Scope</h3>
                 <div className="text-[10px] text-slate-600 grid gap-y-2">
-                    <div><span className="font-bold text-slate-800 block">Structure:</span>{CONFIG.TEXT.SCOPE_STRUCTURE}</div>
-                    <div><span className="font-bold text-slate-800 block">Electricity:</span>{CONFIG.TEXT.SCOPE_ELEC}</div>
-                    <div><span className="font-bold text-slate-800 block">Internet:</span>{CONFIG.TEXT.SCOPE_NET}</div>
-                    <div><span className="font-bold text-slate-800 block">Software:</span>{CONFIG.TEXT.SCOPE_SOFT}</div>
-                    <div><span className="font-bold text-slate-800 block">Permissions:</span>{CONFIG.TEXT.SCOPE_PERM}</div>
-                    <div><span className="font-bold text-slate-800 block">Computer:</span>{CONFIG.TEXT.SCOPE_PC}</div>
-                    <div><span className="font-bold text-slate-800 block">Validity:</span>{CONFIG.TEXT.VALIDITY}</div>
+                    {terms.scope?.structure && <div><span className="font-bold text-slate-800 block">Structure:</span>{terms.scope.structure}</div>}
+                    {terms.scope?.elec && <div><span className="font-bold text-slate-800 block">Electricity:</span>{terms.scope.elec}</div>}
+                    {terms.scope?.net && <div><span className="font-bold text-slate-800 block">Internet:</span>{terms.scope.net}</div>}
+                    {terms.scope?.soft && <div><span className="font-bold text-slate-800 block">Software:</span>{terms.scope.soft}</div>}
+                    {terms.scope?.perm && <div><span className="font-bold text-slate-800 block">Permissions:</span>{terms.scope.perm}</div>}
+                    {terms.scope?.pc && <div><span className="font-bold text-slate-800 block">Computer:</span>{terms.scope.pc}</div>}
+                    <div><span className="font-bold text-slate-800 block">Validity:</span>{terms.validity || CONFIG.TEXT.VALIDITY}</div>
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-slate-200 flex justify-between items-end">

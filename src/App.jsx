@@ -61,7 +61,17 @@ const App = () => {
     terms: {
       price: CONFIG.DEFAULTS.PRICE_BASIS,
       deliveryWeeks: CONFIG.DEFAULTS.DELIVERY_WEEKS,
-      payment: CONFIG.DEFAULTS.PAYMENT_TERMS
+      payment: CONFIG.DEFAULTS.PAYMENT_TERMS,
+      validity: CONFIG.TEXT.VALIDITY,
+      warranty: CONFIG.TEXT.WARRANTY,
+      scope: {
+        structure: CONFIG.TEXT.SCOPE_STRUCTURE,
+        elec: CONFIG.TEXT.SCOPE_ELEC,
+        net: CONFIG.TEXT.SCOPE_NET,
+        soft: CONFIG.TEXT.SCOPE_SOFT,
+        perm: CONFIG.TEXT.SCOPE_PERM,
+        pc: CONFIG.TEXT.SCOPE_PC
+      }
     },
     extraComponents: [],
     extras: [],
@@ -139,7 +149,16 @@ const App = () => {
   };
 
   const handleLoadQuote = (quote, isDuplicate) => {
-    const newState = { ...quote.calculatorState };
+    // Merge with initial state to ensure new fields (like scope/warranty) exist for old quotes
+    const newState = { ...initialCalcState, ...quote.calculatorState };
+
+    // Deep merge terms to preserve new defaults if missing in old quote
+    newState.terms = {
+      ...initialCalcState.terms,
+      ...(quote.calculatorState.terms || {}),
+      scope: { ...initialCalcState.terms.scope, ...(quote.calculatorState.terms?.scope || {}) }
+    };
+
     if (isDuplicate) {
       newState.client = newState.client + ' (Copy)';
       newState.project = newState.project + ' (Copy)';

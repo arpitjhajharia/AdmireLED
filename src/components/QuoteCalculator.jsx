@@ -1044,6 +1044,30 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                 ))}
                                 <button onClick={() => setState(p => ({ ...p, terms: { ...p.terms, payment: [...(p.terms.payment || []), { name: '', percent: 0 }] } }))} className="text-xs text-teal-600 font-bold">+ Add Milestone</button>
                             </div>
+
+                            {/* New Editable Text Areas */}
+                            <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-slate-400">Validity</label>
+                                    <input value={state.terms?.validity} onChange={e => setState(p => ({ ...p, terms: { ...p.terms, validity: e.target.value } }))} className="w-full p-2 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-slate-400">Warranty Terms</label>
+                                    <textarea rows={4} value={state.terms?.warranty} onChange={e => setState(p => ({ ...p, terms: { ...p.terms, warranty: e.target.value } }))} className="w-full p-2 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] uppercase font-bold text-teal-600 dark:text-teal-400 mb-2 block">Client Scope of Work</label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {Object.entries(state.terms?.scope || {}).map(([key, val]) => (
+                                            <div key={key}>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase">{key === 'elec' ? 'Electricity' : key === 'net' ? 'Internet' : key === 'soft' ? 'Software' : key === 'perm' ? 'Permissions' : key === 'pc' ? 'Computer' : key}</span>
+                                                <textarea rows={2} value={val} onChange={e => setState(p => ({ ...p, terms: { ...p.terms, scope: { ...p.terms.scope, [key]: e.target.value } } }))} className="w-full p-2 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </details>
                 </div>
