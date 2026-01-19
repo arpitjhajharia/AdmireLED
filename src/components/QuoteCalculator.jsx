@@ -886,8 +886,9 @@ const QuoteCalculator = ({ user, inventory, transactions, state, setState, excha
                                                 onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)}
                                                 className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white bg-white outline-none"
                                             >
-                                                <option value="closest">Auto</option>
-                                                <option value="exact">Exact</option>
+                                                <option value="closest">Closest</option>
+                                                <option value="up">Round Up</option>
+                                                <option value="down">Round Down</option>
                                             </select>
                                         </div>
 
