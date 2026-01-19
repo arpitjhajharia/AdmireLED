@@ -350,11 +350,22 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                         <span className="block text-[10px] uppercase font-bold text-slate-400">Stock</span>
                                         <span className={`font-bold text-sm ${stock < 0 ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>{stock}</span>
                                     </div>
-                                    <div className="col-span-2 border-t border-slate-200 dark:border-slate-600 pt-2 mt-1">
+
+                                    {/* Landed Cost (Left) */}
+                                    <div className={`border-t border-slate-200 dark:border-slate-600 pt-2 mt-1 ${!readOnly ? 'col-span-1' : 'col-span-2'}`}>
                                         <span className="block text-[10px] uppercase font-bold text-slate-400">Landed Cost</span>
-                                        {/* Pass true for dynamic decimals */}
                                         <span className="font-bold text-slate-700 dark:text-slate-200">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR', false, true)}</span>
                                     </div>
+
+                                    {/* Stock Value (Right) - Managers Only */}
+                                    {!readOnly && (
+                                        <div className="col-span-1 border-t border-slate-200 dark:border-slate-600 pt-2 mt-1 text-right">
+                                            <span className="block text-[10px] uppercase font-bold text-slate-400">Stock Value</span>
+                                            <span className="font-bold text-teal-600 dark:text-teal-400">
+                                                {formatCurrency(((item.price || 0) + (item.carriage || 0)) * stock, item.currency || 'INR', false, true)}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-2">
@@ -382,72 +393,84 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                 <th className="px-4 py-3">Component</th>
                                 <th className="px-4 py-3">Specs</th>
                                 <th className="px-4 py-3 text-center">Stock</th>
+                                {!readOnly && <th className="px-4 py-3 text-right">Stock Value</th>}
                                 <th className="px-4 py-3">Landed Cost</th>
                                 <th className="px-4 py-3 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
-                            {sortedItems.map(item => (
-                                <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${editingId === item.id ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
-                                    <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs capitalize ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
-                                        item.type === 'cabinet' ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' :
-                                            item.type === 'card' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                                                item.type === 'smps' ? 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300' :
-                                                    item.type === 'processor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
-                                                        item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
-                                                            'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                        }`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
-                                    <td className="px-4 py-3 dark:text-slate-200">
-                                        <div className="font-medium">{item.brand} {item.model}</div>
-                                        {item.vendor && <div className="text-[10px] text-teal-600 dark:text-teal-400 mt-0.5">{item.vendor}</div>}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
-                                        {item.type === 'module' && (
-                                            <div className="flex flex-col">
-                                                <span>P{item.pitch} {item.indoor ? 'Indoor' : 'Outdoor'}</span>
-                                                <span>{item.width}x{item.height}mm</span>
-                                            </div>
-                                        )}
-                                        {item.type === 'cabinet' && (
-                                            <div className="flex flex-col">
-                                                <span>{item.material}</span>
-                                                <span>{item.width}x{item.height}mm</span>
-                                                <span>{item.indoor ? 'Indoor' : 'Outdoor'}</span>
-                                            </div>
-                                        )}
-                                        {(item.type === 'card' || item.type === 'processor') && (
-                                            <span>{item.ports ? `${item.ports} Ports` : ''}</span>
-                                        )}
-                                        {item.type === 'smps' && (
-                                            <span>{item.amps ? `${item.amps} Amps` : ''}</span>
-                                        )}
-                                        {item.type === 'ready' && (
-                                            <span>{item.width}x{item.height}mm P{item.pitch}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 font-bold dark:text-slate-200 text-teal-600 text-center">
-                                        {transactions.filter(t => t.itemId === item.id).reduce((acc, t) => acc + (t.type === 'in' ? Number(t.qty) : -Number(t.qty)), 0)}
-                                    </td>
-                                    <td className="px-4 py-3 dark:text-slate-200">
-                                        <div className="flex flex-col">
-                                            {/* Pass true for dynamic decimals */}
-                                            <span className="font-semibold">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR', false, true)}</span>
-                                            {(item.carriage > 0) && <span className="text-[10px] text-slate-400">Base: {item.price} + Carr: {item.carriage}</span>}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 flex gap-2 justify-end">
-                                        {item.type === 'module' && (
-                                            <button onClick={() => openBatchModal(item)} title="Manage Batches" className="text-purple-500 hover:text-purple-700 p-1 bg-purple-50 dark:bg-purple-900/30 rounded"><Layers size={14} /></button>
-                                        )}
+                            {sortedItems.map(item => {
+                                const stock = transactions.filter(t => t.itemId === item.id).reduce((acc, t) => acc + (t.type === 'in' ? Number(t.qty) : -Number(t.qty)), 0);
+                                const landedCost = (item.price || 0) + (item.carriage || 0);
+
+                                return (
+                                    <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${editingId === item.id ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
+                                        <td className="px-4 py-3 capitalize"><span className={`px-2 py-1 rounded-full text-xs capitalize ${item.type === 'module' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' :
+                                            item.type === 'cabinet' ? 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300' :
+                                                item.type === 'card' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
+                                                    item.type === 'smps' ? 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300' :
+                                                        item.type === 'processor' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
+                                                            item.type === 'ready' ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' :
+                                                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                            }`}>{item.type === 'smps' ? 'SMPS' : item.type}</span></td>
+                                        <td className="px-4 py-3 dark:text-slate-200">
+                                            <div className="font-medium">{item.brand} {item.model}</div>
+                                            {item.vendor && <div className="text-[10px] text-teal-600 dark:text-teal-400 mt-0.5">{item.vendor}</div>}
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                                            {item.type === 'module' && (
+                                                <div className="flex flex-col">
+                                                    <span>P{item.pitch} {item.indoor ? 'Indoor' : 'Outdoor'}</span>
+                                                    <span>{item.width}x{item.height}mm</span>
+                                                </div>
+                                            )}
+                                            {item.type === 'cabinet' && (
+                                                <div className="flex flex-col">
+                                                    <span>{item.material}</span>
+                                                    <span>{item.width}x{item.height}mm</span>
+                                                    <span>{item.indoor ? 'Indoor' : 'Outdoor'}</span>
+                                                </div>
+                                            )}
+                                            {(item.type === 'card' || item.type === 'processor') && (
+                                                <span>{item.ports ? `${item.ports} Ports` : ''}</span>
+                                            )}
+                                            {item.type === 'smps' && (
+                                                <span>{item.amps ? `${item.amps} Amps` : ''}</span>
+                                            )}
+                                            {item.type === 'ready' && (
+                                                <span>{item.width}x{item.height}mm P{item.pitch}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 font-bold dark:text-slate-200 text-teal-600 text-center">
+                                            {stock}
+                                        </td>
+
                                         {!readOnly && (
-                                            <>
-                                                <button onClick={() => handleEdit(item)} className="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 dark:bg-blue-900/30 rounded"><Edit size={14} /></button>
-                                                <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:text-red-600 p-1 bg-red-50 dark:bg-red-900/30 rounded"><Trash2 size={14} /></button>
-                                            </>
+                                            <td className="px-4 py-3 font-bold text-right text-teal-600 dark:text-teal-400">
+                                                {formatCurrency(stock * landedCost, item.currency || 'INR', false, true)}
+                                            </td>
                                         )}
-                                    </td>
-                                </tr>
-                            ))}
+
+                                        <td className="px-4 py-3 dark:text-slate-200">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold">{formatCurrency(landedCost, item.currency || 'INR', false, true)}</span>
+                                                {(item.carriage > 0) && <span className="text-[10px] text-slate-400">Base: {item.price} + Carr: {item.carriage}</span>}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 flex gap-2 justify-end">
+                                            {item.type === 'module' && (
+                                                <button onClick={() => openBatchModal(item)} title="Manage Batches" className="text-purple-500 hover:text-purple-700 p-1 bg-purple-50 dark:bg-purple-900/30 rounded"><Layers size={14} /></button>
+                                            )}
+                                            {!readOnly && (
+                                                <>
+                                                    <button onClick={() => handleEdit(item)} className="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 dark:bg-blue-900/30 rounded"><Edit size={14} /></button>
+                                                    <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:text-red-600 p-1 bg-red-50 dark:bg-red-900/30 rounded"><Trash2 size={14} /></button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
