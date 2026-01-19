@@ -79,11 +79,42 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
     if (assemblyMode === 'assembled') {
         const modsPerCab = (Math.floor(cabinet.width / module.width) * Math.floor(cabinet.height / module.height));
         totalModules = totalCabinetsPerScreen * modsPerCab;
+
+        // Calculate SMPS Quantity based on Power
+        let totalSMPS = totalCabinetsPerScreen; // Default fallback
+        let smpsPerCab = 1;
+
+        if (module.maxPower && psu && psu.amps && psu.voltage) {
+            // 1. Calculate Cabinet Area in Sqm
+            const cabAreaSqm = (cabinet.width / 1000) * (cabinet.height / 1000);
+
+            // 2. Calculate Max Power per Cabinet (Watts)
+            const maxPowerPerCabinet = cabAreaSqm * Number(module.maxPower);
+
+            // 3. Calculate SMPS Capacity (Watts)
+            const smpsCapacity = Number(psu.amps) * Number(psu.voltage);
+
+            // 4. Determine SMPS needed per cabinet (Rounded Up)
+            if (smpsCapacity > 0) {
+                smpsPerCab = Math.ceil(maxPowerPerCabinet / smpsCapacity);
+                totalSMPS = smpsPerCab * totalCabinetsPerScreen;
+            }
+        }
+
         rawItems = [
             { id: 'modules', inventoryId: selectedModuleId, name: 'Modules', spec: `${module.brand} ${module.model}`, qty: totalModules, unit: getPriceInInr(module), total: totalModules * getPriceInInr(module), type: 'led' },
             { id: 'cabinets', inventoryId: selectedCabinetId, name: 'Cabinets', spec: `${cabinet.brand} ${cabinet.model}`, qty: totalCabinetsPerScreen, unit: getPriceInInr(cabinet), total: totalCabinetsPerScreen * getPriceInInr(cabinet), type: 'led' },
             { id: 'cards', inventoryId: selectedCardId, name: 'Cards', spec: card ? card.brand : '-', qty: totalCabinetsPerScreen, unit: getPriceInInr(card), total: totalCabinetsPerScreen * getPriceInInr(card), type: 'led' },
-            { id: 'smps', inventoryId: selectedSMPSId, name: 'SMPS', spec: psu ? psu.brand : '-', qty: totalCabinetsPerScreen, unit: getPriceInInr(psu), total: totalCabinetsPerScreen * getPriceInInr(psu), type: 'led' },
+            {
+                id: 'smps',
+                inventoryId: selectedSMPSId,
+                name: 'SMPS',
+                spec: psu ? `${psu.brand} (${smpsPerCab}/cab)` : '-',
+                qty: totalSMPS,
+                unit: getPriceInInr(psu),
+                total: totalSMPS * getPriceInInr(psu),
+                type: 'led'
+            },
         ];
     } else {
         rawItems = [

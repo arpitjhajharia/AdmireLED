@@ -12,7 +12,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
         width: '', height: '', price: '', carriage: '', currency: 'INR', indoor: true,
         brightness: '', refreshRate: '',
         ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
-        contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: ''
+        contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: '', voltage: ''
     });
     const [loading, setLoading] = React.useState(true);
     // Batch Management State
@@ -45,7 +45,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                 return alert("Please fill all compulsory (*) fields.");
             }
         } else if (newItem.type === 'smps') {
-            if (!newItem.brand || !newItem.model || !newItem.price || !newItem.vendor || !newItem.amps) {
+            if (!newItem.brand || !newItem.model || !newItem.price || !newItem.vendor || !newItem.amps || !newItem.voltage) {
                 return alert("Please fill all compulsory (*) fields.");
             }
         } else if (newItem.type === 'ready') {
@@ -80,6 +80,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                 ipBack: newItem.ipBack ? parseInt(newItem.ipBack) : 0,
                 ports: newItem.ports ? parseInt(newItem.ports) : 0,
                 amps: newItem.amps ? Number(newItem.amps) : 0,
+                voltage: newItem.voltage ? Number(newItem.voltage) : 0,
                 updatedAt: new Date()
             };
 
@@ -117,7 +118,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
             width: '', height: '', price: '', carriage: '', currency: 'INR', indoor: true,
             brightness: '', refreshRate: '',
             ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
-            contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: ''
+            contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: '', voltage: ''
         });
     };
 
@@ -246,7 +247,10 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                     )}
 
                     {newItem.type === 'smps' && (
-                        <input placeholder="Capacity (Amps)*" type="number" step="0.1" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.amps} onChange={e => setNewItem({ ...newItem, amps: e.target.value })} />
+                        <>
+                            <input placeholder="Capacity (Amps)*" type="number" step="0.1" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.amps} onChange={e => setNewItem({ ...newItem, amps: e.target.value })} />
+                            <input placeholder="Voltage (V)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.voltage} onChange={e => setNewItem({ ...newItem, voltage: e.target.value })} />
+                        </>
                     )}
 
                     {newItem.type === 'module' && (
