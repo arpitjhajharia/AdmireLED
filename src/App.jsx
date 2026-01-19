@@ -241,7 +241,7 @@ const App = () => {
       </div>
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6">
-        {view === 'inventory' && <InventoryManager user={user} transactions={transactions} readOnly={isInventoryReadOnly} />}
+        {view === 'inventory' && <InventoryManager user={user} transactions={transactions} readOnly={isInventoryReadOnly} exchangeRate={exchangeRate} />}
         {view === 'ledger' && <InventoryLedger user={user} inventory={inventory} transactions={transactions} readOnly={isLedgerReadOnly} />}
         {view === 'saved' && <SavedQuotesManager user={user} inventory={inventory} transactions={transactions} exchangeRate={exchangeRate} onLoadQuote={handleLoadQuote} readOnly={isBOMReadOnly} />}
         {view === 'users' && showUsersTab && <UserManager />}

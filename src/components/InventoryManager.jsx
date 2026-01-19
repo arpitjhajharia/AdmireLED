@@ -3,7 +3,7 @@ import { Box, Edit, Plus, Trash2, X, Layers } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency } from '../lib/utils';
 
-const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
+const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeRate = 1 }) => {
     const [items, setItems] = React.useState([]);
     const [editingId, setEditingId] = React.useState(null);
     const [showForm, setShowForm] = React.useState(false);
@@ -360,9 +360,14 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                     {/* Stock Value (Right) - Managers Only */}
                                     {!readOnly && (
                                         <div className="col-span-1 border-t border-slate-200 dark:border-slate-600 pt-2 mt-1 text-right">
-                                            <span className="block text-[10px] uppercase font-bold text-slate-400">Stock Value</span>
+                                            <span className="block text-[10px] uppercase font-bold text-slate-400">Stock Value (₹)</span>
                                             <span className="font-bold text-teal-600 dark:text-teal-400">
-                                                {formatCurrency(((item.price || 0) + (item.carriage || 0)) * stock, item.currency || 'INR', false, true)}
+                                                {formatCurrency(
+                                                    item.currency === 'USD'
+                                                        ? ((item.price || 0) + (item.carriage || 0)) * stock * exchangeRate
+                                                        : ((item.price || 0) + (item.carriage || 0)) * stock,
+                                                    'INR', false, true
+                                                )}
                                             </span>
                                         </div>
                                     )}
@@ -393,8 +398,8 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                 <th className="px-4 py-3">Component</th>
                                 <th className="px-4 py-3">Specs</th>
                                 <th className="px-4 py-3 text-center">Stock</th>
-                                {!readOnly && <th className="px-4 py-3 text-right">Stock Value</th>}
                                 <th className="px-4 py-3">Landed Cost</th>
+                                {!readOnly && <th className="px-4 py-3 text-right">Stock Value (₹)</th>}
                                 <th className="px-4 py-3 text-right">Action</th>
                             </tr>
                         </thead>
@@ -445,18 +450,23 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                             {stock}
                                         </td>
 
-                                        {!readOnly && (
-                                            <td className="px-4 py-3 font-bold text-right text-teal-600 dark:text-teal-400">
-                                                {formatCurrency(stock * landedCost, item.currency || 'INR', false, true)}
-                                            </td>
-                                        )}
-
                                         <td className="px-4 py-3 dark:text-slate-200">
                                             <div className="flex flex-col">
                                                 <span className="font-semibold">{formatCurrency(landedCost, item.currency || 'INR', false, true)}</span>
                                                 {(item.carriage > 0) && <span className="text-[10px] text-slate-400">Base: {item.price} + Carr: {item.carriage}</span>}
                                             </div>
                                         </td>
+
+                                        {!readOnly && (
+                                            <td className="px-4 py-3 font-bold text-right text-teal-600 dark:text-teal-400">
+                                                {formatCurrency(
+                                                    item.currency === 'USD'
+                                                        ? landedCost * stock * exchangeRate
+                                                        : landedCost * stock,
+                                                    'INR', false, true
+                                                )}
+                                            </td>
+                                        )}
                                         <td className="px-4 py-3 flex gap-2 justify-end">
                                             {item.type === 'module' && (
                                                 <button onClick={() => openBatchModal(item)} title="Manage Batches" className="text-purple-500 hover:text-purple-700 p-1 bg-purple-50 dark:bg-purple-900/30 rounded"><Layers size={14} /></button>
