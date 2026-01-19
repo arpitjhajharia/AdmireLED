@@ -352,7 +352,8 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                     </div>
                                     <div className="col-span-2 border-t border-slate-200 dark:border-slate-600 pt-2 mt-1">
                                         <span className="block text-[10px] uppercase font-bold text-slate-400">Landed Cost</span>
-                                        <span className="font-bold text-slate-700 dark:text-slate-200">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR')}</span>
+                                        {/* Pass true for dynamic decimals */}
+                                        <span className="font-bold text-slate-700 dark:text-slate-200">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR', false, true)}</span>
                                     </div>
                                 </div>
 
@@ -429,7 +430,8 @@ const InventoryManager = ({ user, transactions = [], readOnly = false }) => {
                                     </td>
                                     <td className="px-4 py-3 dark:text-slate-200">
                                         <div className="flex flex-col">
-                                            <span className="font-semibold">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR')}</span>
+                                            {/* Pass true for dynamic decimals */}
+                                            <span className="font-semibold">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR', false, true)}</span>
                                             {(item.carriage > 0) && <span className="text-[10px] text-slate-400">Base: {item.price} + Carr: {item.carriage}</span>}
                                         </div>
                                     </td>

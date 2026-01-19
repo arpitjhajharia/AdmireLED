@@ -1,10 +1,27 @@
 // src/lib/utils.js
 
-export const formatCurrency = (amount, currency = 'INR', compact = false) => {
+export const formatCurrency = (amount, currency = 'INR', compact = false, dynamicDecimals = false) => {
+    let minFraction = 0;
+    let maxFraction = 0;
+
+    if (compact) {
+        maxFraction = 1;
+    } else if (dynamicDecimals) {
+        // If it's a whole number, show 0 decimals. If it has decimals, show 2.
+        const isWhole = amount % 1 === 0;
+        minFraction = isWhole ? 0 : 2;
+        maxFraction = isWhole ? 0 : 2;
+    } else {
+        // Default behavior: No decimals for standard view
+        minFraction = 0;
+        maxFraction = 0;
+    }
+
     return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
         style: 'currency',
         currency: currency,
-        maximumFractionDigits: compact ? 1 : 0,
+        minimumFractionDigits: minFraction,
+        maximumFractionDigits: maxFraction,
         notation: compact ? "compact" : "standard"
     }).format(amount);
 };
