@@ -5,4 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/AdmireLED/', // <--- ADD THIS LINE (Must match your Repo Name exactly)
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
 })
