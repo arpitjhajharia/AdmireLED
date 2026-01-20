@@ -25,9 +25,13 @@ const UserManager = () => {
 
         try {
             const email = `${newUser.username.trim().toLowerCase()}@admire.internal`;
-            await secondaryApp.auth().createUserWithEmailAndPassword(email, newUser.password);
+            // 1. Capture the result to get the UID
+            const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, newUser.password);
+            const uid = userCredential.user.uid;
 
-            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(newUser.username.trim().toLowerCase()).set({
+            // 2. Save Role using the UID as the Document Key (Secure Link)
+            await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(uid).set({
+                username: newUser.username.trim().toLowerCase(), // Store username inside the doc for reference
                 role: newUser.role,
                 createdAt: new Date().toISOString()
             });
@@ -109,9 +113,9 @@ const UserManager = () => {
                                 <td className="p-3 font-medium dark:text-white">{u.id}</td>
                                 <td className="p-3">
                                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${u.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
-                                            u.role === 'manager' ? 'bg-blue-100 text-blue-700' :
-                                                u.role === 'supervisor' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                        u.role === 'manager' ? 'bg-blue-100 text-blue-700' :
+                                            u.role === 'supervisor' ? 'bg-amber-100 text-amber-700' :
+                                                'bg-gray-100 text-gray-700'
                                         }`}>
                                         {u.role}
                                     </span>

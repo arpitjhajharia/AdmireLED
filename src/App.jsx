@@ -94,8 +94,8 @@ const App = () => {
         const username = u.email.split('@')[0].toLowerCase();
         setUser({ ...u, username });
 
-        // Fetch Role
-        const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(username).get();
+        // Fetch Role using UID (Secure)
+        const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(u.uid).get();
         if (roleDoc.exists) {
           setUserRole(roleDoc.data().role);
         } else {
