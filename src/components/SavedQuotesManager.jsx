@@ -1,8 +1,9 @@
 import React from 'react';
-import { Eye, Printer, Trash2, FileText, Download, Copy, Edit } from 'lucide-react';
+import { Eye, Printer, Trash2, FileText, Download, Copy, Edit, Box } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency, calculateBOM } from '../lib/utils';
 import PrintLayout from './PrintLayout';
+import BOMLayout from './BOMLayout'; // Import the BOM Layout for "Blind" View
 
 const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoadQuote, readOnly = false }) => {
     const [quotes, setQuotes] = React.useState([]);
@@ -72,33 +73,27 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     };
 
     const handleDownloadExcel = (quote) => {
-        // 1. Prepare Data (Handle both old single-screen and new multi-screen quotes)
+        if (readOnly) return; // double check protection
+        // ... (Original Excel logic preserved below) ...
         let calculations = [];
         let grandTotalSell = 0;
         let grandTotalCost = 0;
 
         if (quote.allScreensData && quote.allScreensData.calculations) {
-            // New Format: Use pre-calculated data attached to the quote
             calculations = quote.allScreensData.calculations;
             grandTotalSell = quote.allScreensData.totalProjectSell;
             grandTotalCost = quote.allScreensData.totalProjectCost;
         } else {
-            // Fallback: Recalculate (for older quotes or if data is missing)
             const state = quote.calculatorState;
             if (state && state.screens && state.screens.length > 0) {
-                // Multi-screen recalculation
                 calculations = state.screens.map(screen => {
-                    // Flatten the state: Merge global settings with specific screen settings
                     const screenState = { ...state, ...screen };
                     return calculateBOM(screenState, inventory, transactions, exchangeRate);
                 }).filter(c => c !== null);
             } else {
-                // Single-screen legacy fallback
                 const result = calculateBOM(state, inventory, transactions, exchangeRate);
                 if (result) calculations = [result];
             }
-
-            // Sum up totals if we had to recalculate
             if (calculations.length > 0) {
                 grandTotalCost = calculations.reduce((acc, c) => acc + c.totalProjectCost, 0);
                 grandTotalSell = calculations.reduce((acc, c) => acc + c.totalProjectSell, 0);
@@ -107,8 +102,6 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
 
         if (calculations.length === 0) return alert("Calculation failed. Inventory items might be missing.");
 
-        // 2. Generate CSV Content
-        // Sanitize project/client names to prevent CSV breakage
         const safeProject = (quote.project || '').replace(/,/g, ' ');
         const safeClient = (quote.client || '').replace(/,/g, ' ');
 
@@ -133,13 +126,11 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
             csv += `\n--------------------------------\n\n`;
         });
 
-        // 3. Grand Totals
         csv += `PROJECT SUMMARY\n`;
         csv += `Grand Total Cost,${grandTotalCost.toFixed(2)}\n`;
         csv += `Grand Total Sell,${grandTotalSell.toFixed(2)}\n`;
         csv += `Net Margin,${(grandTotalSell - grandTotalCost).toFixed(2)}\n`;
 
-        // 4. Download Trigger
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -155,24 +146,46 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                 <div className="fixed inset-0 z-[100] bg-black/80 flex justify-center items-center p-4">
                     <div className="bg-white max-w-4xl w-full h-[90vh] rounded-lg shadow-2xl flex flex-col">
                         <div className="p-4 border-b flex justify-between items-center bg-slate-100 rounded-t-lg">
-                            <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Eye size={20} /> View Saved Quote</h2>
+                            <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                {/* DYNAMIC TITLE BASED ON ROLE */}
+                                {readOnly ? <Box size={20} className="text-teal-600" /> : <Eye size={20} />}
+                                {readOnly ? 'Bill of Materials (BOM)' : 'View Saved Quote'}
+                            </h2>
                             <div className="flex gap-2">
                                 <button onClick={() => setViewQuote(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded">Close</button>
                                 <button onClick={() => {
                                     const originalTitle = document.title;
-                                    document.title = `${viewQuote.client}_${viewQuote.project}_Quote`.replace(/[^a-zA-Z0-9_]/g, '_');
+                                    document.title = `${viewQuote.client}_${viewQuote.project}_${readOnly ? 'BOM' : 'Quote'}`.replace(/[^a-zA-Z0-9_]/g, '_');
                                     window.print();
                                     document.title = originalTitle;
-                                }} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2"><Printer size={16} /> Print / PDF</button>
+                                }} className="px-4 py-2 bg-teal-600 text-white hover:bg-teal-700 rounded flex items-center gap-2">
+                                    <Printer size={16} /> Print / PDF
+                                </button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto p-8 bg-slate-200">
-                            <PrintLayout
-                                data={viewQuote.data ? { ...viewQuote.data, clientName: viewQuote.client, projectName: viewQuote.project } : null}
-                                allScreensData={viewQuote.allScreensData ? { ...viewQuote.allScreensData, clientName: viewQuote.client, projectName: viewQuote.project } : null}
-                                currency='INR'
-                                exchangeRate={exchangeRate}
-                            />
+                            {/* BLIND MODE SWITCH: If readOnly, show BOM Layout. Else show Quote Layout */}
+                            {readOnly ? (
+                                <BOMLayout
+                                    data={viewQuote.data ? { ...viewQuote.data, clientName: viewQuote.client, projectName: viewQuote.project } : null}
+                                    allScreensData={viewQuote.allScreensData ? {
+                                        ...viewQuote.allScreensData,
+                                        clientName: viewQuote.client,
+                                        projectName: viewQuote.project,
+                                        // Ensure unit exists for display
+                                        screenConfigs: viewQuote.allScreensData.screenConfigs?.map(s => ({ ...s, unit: s.unit || 'm' }))
+                                    } : null}
+                                    inventory={inventory}
+                                    transactions={transactions}
+                                />
+                            ) : (
+                                <PrintLayout
+                                    data={viewQuote.data ? { ...viewQuote.data, clientName: viewQuote.client, projectName: viewQuote.project } : null}
+                                    allScreensData={viewQuote.allScreensData ? { ...viewQuote.allScreensData, clientName: viewQuote.client, projectName: viewQuote.project } : null}
+                                    currency='INR'
+                                    exchangeRate={exchangeRate}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -184,17 +197,13 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                 </h2>
             </div>
 
-            {/* Mobile Responsive Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {quotes.map(quote => {
                     const state = quote.calculatorState || {};
-                    const unit = state.unit || 'm';
-                    const pitch = state.selectedPitch || 'N/A';
                     const isIndoor = state.selectedIndoor === 'true';
 
                     return (
                         <div key={quote.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-                            {/* Card Body */}
                             <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
@@ -209,66 +218,56 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                         {isIndoor ? 'Indoor' : 'Outdoor'}
                                     </span>
                                 </div>
+                                <div className="text-xs text-slate-400 mb-4">{new Date(quote.updatedAt?.seconds * 1000).toLocaleString()}</div>
 
-                                <div className="text-xs text-slate-400 mb-4">
-                                    {new Date(quote.updatedAt?.seconds * 1000).toLocaleString()}
-                                </div>
-
-                                {/* Screen Breakdown List */}
                                 <div className="bg-slate-50 dark:bg-slate-700/30 p-2 rounded-lg mb-4 space-y-1.5 flex-1">
                                     {quote.allScreensData?.calculations ? (
                                         quote.allScreensData.calculations.map((calc, idx) => (
                                             <div key={idx} className="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
                                                 <span className="text-slate-600 dark:text-slate-300 font-medium">
-                                                    Screen #{idx + 1} <span className="text-slate-400 font-normal">
-                                                        ({calc.finalWidth}x{calc.finalHeight}m / {(Number(calc.finalWidth) * 3.28084).toFixed(2)}x{(Number(calc.finalHeight) * 3.28084).toFixed(2)}ft ×{calc.screenQty})
+                                                    Screen #{idx + 1} <span className="text-slate-400 font-normal">({calc.finalWidth}x{calc.finalHeight}m ×{calc.screenQty})</span>
+                                                </span>
+                                                {/* HIDE PRICE IN BREAKDOWN */}
+                                                {!readOnly && (
+                                                    <span className="font-bold text-slate-800 dark:text-white">
+                                                        {formatCurrency(calc.totalProjectSell, 'INR', true)}
                                                     </span>
-                                                </span>
-                                                <span className="font-bold text-slate-800 dark:text-white">
-                                                    {formatCurrency(calc.totalProjectSell, 'INR', true)}
-                                                </span>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
-                                        // Fallback for quotes saved before multi-screen update
                                         <div className="flex justify-between items-center text-xs">
-                                            <span className="text-slate-600 dark:text-slate-300 font-medium">
-                                                Screen #1 <span className="text-slate-400 font-normal">(P{pitch} ×{state.screenQty || 1})</span>
-                                            </span>
-                                            <span className="font-bold text-slate-800 dark:text-white">
-                                                {formatCurrency(quote.finalAmount, 'INR', true)}
-                                            </span>
+                                            <span className="text-slate-600 dark:text-slate-300 font-medium">Screen #1</span>
+                                            {!readOnly && <span className="font-bold text-slate-800 dark:text-white">{formatCurrency(quote.finalAmount, 'INR', true)}</span>}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Total Footer */}
-                                <div className="flex justify-between items-end pt-2 border-t border-slate-100 dark:border-slate-700 mt-auto">
-                                    <span className="text-xs font-bold text-slate-400 uppercase">Total Estimate</span>
-                                    <span className="text-xl font-bold text-teal-600 dark:text-teal-400">
-                                        {formatCurrency(quote.finalAmount, 'INR')}
-                                    </span>
-                                </div>
+                                {/* HIDE TOTAL FOOTER IF READONLY */}
+                                {!readOnly && (
+                                    <div className="flex justify-between items-end pt-2 border-t border-slate-100 dark:border-slate-700 mt-auto">
+                                        <span className="text-xs font-bold text-slate-400 uppercase">Total Estimate</span>
+                                        <span className="text-xl font-bold text-teal-600 dark:text-teal-400">{formatCurrency(quote.finalAmount, 'INR')}</span>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Action Buttons Grid */}
-                            <div className={`grid ${readOnly ? 'grid-cols-2' : 'grid-cols-5'} border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800`}>
+                            {/* Action Buttons */}
+                            <div className={`grid ${readOnly ? 'grid-cols-1' : 'grid-cols-5'} border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800`}>
                                 <button onClick={() => handleView(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="View">
-                                    <Eye size={16} /> <span className="hidden sm:inline">View</span>
+                                    {readOnly ? <Box size={16} /> : <Eye size={16} />}
+                                    <span className="hidden sm:inline">{readOnly ? 'View BOM' : 'View'}</span>
                                 </button>
 
-                                {!readOnly && (
-                                    <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
-                                        <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
-                                    </button>
-                                )}
-
-                                <button onClick={() => handleDownloadExcel(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Excel">
-                                    <Download size={16} /> <span className="hidden sm:inline">Excel</span>
-                                </button>
-
+                                {/* HIDE ALL OTHER ACTIONS FOR SUPERVISORS */}
                                 {!readOnly && (
                                     <>
+                                        <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
+                                            <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
+                                        </button>
+                                        <button onClick={() => handleDownloadExcel(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Excel">
+                                            <Download size={16} /> <span className="hidden sm:inline">Excel</span>
+                                        </button>
                                         <button onClick={() => onLoadQuote(quote, true)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Clone">
                                             <Copy size={16} /> <span className="hidden sm:inline">Clone</span>
                                         </button>

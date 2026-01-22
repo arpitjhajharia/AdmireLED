@@ -26,7 +26,7 @@ const App = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(CONFIG.DEFAULTS.EXCHANGE_RATE);
 
-  // --- ORIGINAL STATE FROM YOUR FILE ---
+  // --- FULL INITIAL STATE (Preserved) ---
   const initialCalcState = {
     client: '', project: '', unit: 'm',
     screens: [
@@ -89,22 +89,25 @@ const App = () => {
 
   const [calcState, setCalcState] = useState(initialCalcState);
 
-  // 1. Auth & Role Init (NEW)
+  // 1. Auth & Role Init
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (u) => {
       if (u) {
         const username = u.email.split('@')[0].toLowerCase();
-        setUser({ ...u, username });
 
         // Fetch Role using UID (Secure)
         const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(u.uid).get();
+        let role = 'labour';
+
         if (roleDoc.exists) {
-          setUserRole(roleDoc.data().role);
+          role = roleDoc.data().role;
         } else {
-          // Failsafe: 'admin' is super_admin, others default to labour
-          if (username === 'admin') setUserRole('super_admin');
-          else setUserRole('labour');
+          // Failsafe: 'admin' is super_admin
+          if (username === 'admin') role = 'super_admin';
         }
+
+        setUserRole(role);
+        setUser({ ...u, username, role }); // Attach role to user object
       } else {
         setUser(null);
         setUserRole(null);
@@ -125,21 +128,22 @@ const App = () => {
   // 3. Dark Mode
   useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
-  const handleLogout = () => auth.signOut();
+  const handleLogout = () => {
+    auth.signOut();
+    setView('quote');
+    setUser(null);
+    setUserRole(null);
+  };
 
-  // --- ORIGINAL HANDLERS RESTORED EXACTLY ---
+  // --- SAVE QUOTE (Logic Preserved) ---
   const handleSaveQuote = async (finalAmount) => {
     if (!calcState.client || !calcState.project) return alert("Please enter Client and Project names.");
 
-    // Calculate all screens data locally before saving
+    // Calculate all screens data locally before saving (Preserved from your file)
     let allScreensData = null;
-
     if (calcState.screens && calcState.screens.length > 0) {
       const allCalculations = calcState.screens.map((screen) => {
-        const screenCalcState = {
-          ...calcState,
-          ...screen
-        };
+        const screenCalcState = { ...calcState, ...screen };
         return calculateBOM(screenCalcState, inventory, transactions, exchangeRate);
       }).filter(calc => calc !== null);
 
@@ -167,17 +171,17 @@ const App = () => {
         screenCount: calcState.screens.length,
         totalScreenQty: allScreensData?.totalScreenQty || 0,
         allScreensData: allScreensData,
-        updatedAt: new Date()
+        createdBy: user.email,
+        createdAt: new Date().toISOString()
       });
       alert("Quote Saved Successfully!");
     } catch (e) { console.error(e); alert("Error saving quote."); }
   };
 
+  // --- LOAD QUOTE (Logic Preserved) ---
   const handleLoadQuote = (quote, isDuplicate) => {
-    // Merge with initial state to ensure new fields (like scope/warranty) exist for old quotes
+    // Deep merge to preserve new defaults
     const newState = { ...initialCalcState, ...quote.calculatorState };
-
-    // Deep merge terms to preserve new defaults if missing in old quote
     newState.terms = {
       ...initialCalcState.terms,
       ...(quote.calculatorState.terms || {}),
@@ -195,14 +199,17 @@ const App = () => {
   if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>;
   if (!user) return <Login />;
 
-  // --- ROLE BASED PERMISSIONS ---
-  const showUsersTab = ['super_admin'].includes(userRole);
-  // Calculator: Read Only for Labour & Supervisor
-  const isBOMReadOnly = ['labour', 'supervisor'].includes(userRole);
-  // Inventory: Read Only for Labour & Supervisor
+  // --- PERMISSION LOGIC (UPDATED) ---
+  const showUsersTab = userRole === 'super_admin';
+
+  // Inventory: Read Only for Labour AND Supervisor
   const isInventoryReadOnly = ['labour', 'supervisor'].includes(userRole);
+
   // Ledger: Read Only for Labour (Supervisor CAN write)
   const isLedgerReadOnly = ['labour'].includes(userRole);
+
+  // Calculator: Read Only for Labour (Supervisor CAN write inputs but won't see prices)
+  const isCalculatorReadOnly = ['labour'].includes(userRole);
 
   return (
     <div className="min-h-screen no-print pb-20 bg-slate-50 dark:bg-slate-900 transition-colors font-sans text-slate-900 dark:text-slate-100">
@@ -226,22 +233,14 @@ const App = () => {
               <div className="text-[10px] text-slate-400">{user.username}</div>
             </div>
 
-            {/* Desktop Logout (Hidden on mobile) */}
             <button onClick={handleLogout} className="hidden md:block p-2 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-slate-400 hover:text-red-500 rounded-lg transition-colors"><LogOut size={18} /></button>
-
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
-            {/* Mobile Menu Toggle (Visible only on mobile) */}
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 dark:text-slate-300">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 dark:text-slate-300">{isMenuOpen ? <X size={24} /> : <Menu size={24} />}</button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xl absolute w-full z-50 animate-in slide-in-from-top-2">
           <div className="flex flex-col p-2 space-y-1">
@@ -257,13 +256,11 @@ const App = () => {
             <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
               <FileText size={18} /> Quotes
             </button>
-
             {showUsersTab && (
               <button onClick={() => { setView('admin'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'admin' ? 'bg-purple-50 text-purple-700 dark:bg-slate-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
                 <Shield size={18} /> Admin
               </button>
             )}
-
             <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">
               <button onClick={handleLogout} className="w-full p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
                 <LogOut size={18} /> Logout
@@ -274,25 +271,57 @@ const App = () => {
       )}
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6">
-        {view === 'inventory' && <InventoryManager user={user} transactions={transactions} readOnly={isInventoryReadOnly} exchangeRate={exchangeRate} />}
-        {view === 'ledger' && <InventoryLedger user={user} inventory={inventory} transactions={transactions} readOnly={isLedgerReadOnly} />}
-        {view === 'saved' && <SavedQuotesManager user={user} inventory={inventory} transactions={transactions} exchangeRate={exchangeRate} onLoadQuote={handleLoadQuote} readOnly={isBOMReadOnly} />}
+        {view === 'inventory' && (
+          <InventoryManager
+            user={user}
+            userRole={userRole}
+            transactions={transactions}
+            readOnly={isInventoryReadOnly}
+            exchangeRate={exchangeRate}
+          />
+        )}
+
+        {view === 'ledger' && (
+          <InventoryLedger
+            user={user}
+            userRole={userRole}
+            inventory={inventory}
+            transactions={transactions}
+            readOnly={isLedgerReadOnly}
+          />
+        )}
+
+        {view === 'saved' && (
+          <SavedQuotesManager
+            user={user}
+            userRole={userRole}
+            inventory={inventory}
+            transactions={transactions}
+            exchangeRate={exchangeRate}
+            onLoadQuote={handleLoadQuote}
+            readOnly={isCalculatorReadOnly}
+          />
+        )}
+
         {view === 'admin' && showUsersTab && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* 1. User Management Section */}
             <UserManager user={user} />
-
-            {/* 2. System Backup Section */}
             <BackupManager />
           </div>
         )}
+
         {view === 'quote' && (
           <QuoteCalculator
-            user={user} inventory={inventory} transactions={transactions}
-            state={calcState} setState={setCalcState}
-            exchangeRate={exchangeRate} setExchangeRate={setExchangeRate}
+            user={user}
+            userRole={userRole}
+            inventory={inventory}
+            transactions={transactions}
+            state={calcState}
+            setState={setCalcState}
+            exchangeRate={exchangeRate}
+            setExchangeRate={setExchangeRate}
             onSaveQuote={handleSaveQuote}
-            readOnly={isBOMReadOnly}
+            readOnly={isCalculatorReadOnly}
           />
         )}
       </main>
