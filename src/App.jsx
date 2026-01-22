@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut } from 'lucide-react';
+import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X } from 'lucide-react';
 import { auth, db, appId } from './lib/firebase';
 import { calculateBOM, generateId } from './lib/utils';
 import { CONFIG } from './lib/config';
@@ -10,6 +10,7 @@ import InventoryLedger from './components/InventoryLedger';
 import SavedQuotesManager from './components/SavedQuotesManager';
 import QuoteCalculator from './components/QuoteCalculator';
 import UserManager from './components/UserManager';
+import BackupManager from './components/BackupManager';
 import Login from './components/Login';
 
 const App = () => {
@@ -17,6 +18,7 @@ const App = () => {
   const [userRole, setUserRole] = useState(null);
   const [view, setView] = useState('quote');
   const [loading, setLoading] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Existing state
   const [inventory, setInventory] = useState([]);
@@ -215,7 +217,7 @@ const App = () => {
             <button onClick={() => setView('inventory')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
             <button onClick={() => setView('ledger')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
             <button onClick={() => setView('saved')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
-            {showUsersTab && <button onClick={() => setView('users')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'users' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Users</button>}
+            {showUsersTab && <button onClick={() => setView('admin')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
           </div>
 
           <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
@@ -223,28 +225,67 @@ const App = () => {
               <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{userRole?.replace('_', ' ')}</div>
               <div className="text-[10px] text-slate-400">{user.username}</div>
             </div>
-            <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-slate-400 hover:text-red-500 rounded-lg transition-colors"><LogOut size={18} /></button>
+
+            {/* Desktop Logout (Hidden on mobile) */}
+            <button onClick={handleLogout} className="hidden md:block p-2 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-slate-400 hover:text-red-500 rounded-lg transition-colors"><LogOut size={18} /></button>
+
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            {/* Mobile Menu Toggle (Visible only on mobile) */}
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 dark:text-slate-300">
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Tabs */}
-      <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-16 z-40 flex shadow-sm overflow-x-auto">
-        <button onClick={() => setView('quote')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'quote' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Calculator</button>
-        <button onClick={() => setView('inventory')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'inventory' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Components</button>
-        <button onClick={() => setView('ledger')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'ledger' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Stock</button>
-        <button onClick={() => setView('saved')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'saved' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Quotes</button>
-        {showUsersTab && <button onClick={() => setView('users')} className={`flex-1 py-3 px-2 text-xs font-bold whitespace-nowrap border-b-2 ${view === 'users' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>Users</button>}
-      </div>
+      {/* Mobile Dropdown Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xl absolute w-full z-50 animate-in slide-in-from-top-2">
+          <div className="flex flex-col p-2 space-y-1">
+            <button onClick={() => { setView('quote'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'quote' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+              <Calculator size={18} /> Calculator
+            </button>
+            <button onClick={() => { setView('inventory'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'inventory' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+              <Box size={18} /> Components
+            </button>
+            <button onClick={() => { setView('ledger'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'ledger' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+              <Archive size={18} /> Stock Ledger
+            </button>
+            <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+              <FileText size={18} /> Quotes
+            </button>
+
+            {showUsersTab && (
+              <button onClick={() => { setView('admin'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'admin' ? 'bg-purple-50 text-purple-700 dark:bg-slate-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                <Shield size={18} /> Admin
+              </button>
+            )}
+
+            <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">
+              <button onClick={handleLogout} className="w-full p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                <LogOut size={18} /> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-[1600px] mx-auto p-4 md:p-6">
         {view === 'inventory' && <InventoryManager user={user} transactions={transactions} readOnly={isInventoryReadOnly} exchangeRate={exchangeRate} />}
         {view === 'ledger' && <InventoryLedger user={user} inventory={inventory} transactions={transactions} readOnly={isLedgerReadOnly} />}
         {view === 'saved' && <SavedQuotesManager user={user} inventory={inventory} transactions={transactions} exchangeRate={exchangeRate} onLoadQuote={handleLoadQuote} readOnly={isBOMReadOnly} />}
-        {view === 'users' && showUsersTab && <UserManager />}
+        {view === 'admin' && showUsersTab && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* 1. User Management Section */}
+            <UserManager user={user} />
+
+            {/* 2. System Backup Section */}
+            <BackupManager />
+          </div>
+        )}
         {view === 'quote' && (
           <QuoteCalculator
             user={user} inventory={inventory} transactions={transactions}
