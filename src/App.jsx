@@ -20,35 +20,22 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Existing state
+  // Data State
   const [inventory, setInventory] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(CONFIG.DEFAULTS.EXCHANGE_RATE);
 
-  // --- FULL INITIAL STATE (Preserved) ---
+  // --- CALCULATOR STATE (Full Original Object) ---
   const initialCalcState = {
     client: '', project: '', unit: 'm',
     screens: [
       {
-        id: generateId(),
-        screenQty: 0,
-        targetWidth: 0,
-        targetHeight: 0,
-        selectedIndoor: 'true',
-        assemblyMode: 'assembled',
-        selectedPitch: '',
-        selectedModuleId: '',
-        selectedCabinetId: '',
-        selectedCardId: '',
-        selectedSMPSId: '',
-        selectedProcId: '',
-        sizingMode: 'closest',
-        readyId: '',
-        extraComponents: [],
-        overrides: {},
-        editingRow: null,
-        extras: [],
+        id: generateId(), screenQty: 0, targetWidth: 0, targetHeight: 0,
+        selectedIndoor: 'true', assemblyMode: 'assembled', sizingMode: 'closest',
+        selectedPitch: '', selectedModuleId: '', selectedCabinetId: '',
+        selectedCardId: '', selectedSMPSId: '', selectedProcId: '', readyId: '',
+        extraComponents: [], overrides: {}, extras: [],
         commercials: {
           processor: { val: 0, unit: 'screen', cost: 0, costType: 'abs' },
           installation: { val: 0, unit: 'sqft', cost: 0, costType: 'abs' },
@@ -56,10 +43,7 @@ const App = () => {
         }
       }
     ],
-    activeScreenIndex: 0,
-    selectedIndoor: 'true', assemblyMode: 'assembled', selectedPitch: '',
-    selectedModuleId: '', selectedCabinetId: '', selectedCardId: '',
-    selectedSMPSId: '', selectedProcId: '', sizingMode: 'closest', readyId: '',
+    activeScreenIndex: 0, selectedIndoor: 'true', assemblyMode: 'assembled',
     margin: 0, targetSellPrice: 0, pricingMode: 'margin',
     commercials: {
       processor: { val: 0, unit: 'screen' },
@@ -81,10 +65,7 @@ const App = () => {
         pc: CONFIG.TEXT.SCOPE_PC
       }
     },
-    extraComponents: [],
-    extras: [],
-    overrides: {},
-    editingRow: null
+    extraComponents: [], extras: [], overrides: {}, editingRow: null
   };
 
   const [calcState, setCalcState] = useState(initialCalcState);
@@ -93,21 +74,22 @@ const App = () => {
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (u) => {
       if (u) {
-        const username = u.email.split('@')[0].toLowerCase();
-
-        // Fetch Role using UID (Secure)
-        const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(u.uid).get();
+        const username = u.email ? u.email.split('@')[0].toLowerCase() : 'user';
         let role = 'labour';
 
-        if (roleDoc.exists) {
-          role = roleDoc.data().role;
-        } else {
-          // Failsafe: 'admin' is super_admin
-          if (username === 'admin') role = 'super_admin';
+        try {
+          const roleDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles').doc(u.uid).get();
+          if (roleDoc.exists) {
+            role = roleDoc.data().role;
+          } else if (username === 'admin') {
+            role = 'super_admin';
+          }
+        } catch (err) {
+          console.error("Role fetch error:", err);
         }
 
         setUserRole(role);
-        setUser({ ...u, username, role }); // Attach role to user object
+        setUser({ ...u, username, role });
       } else {
         setUser(null);
         setUserRole(null);
@@ -117,7 +99,7 @@ const App = () => {
     return () => unsub();
   }, []);
 
-  // 2. Data Sync
+  // 2. Data Loading
   useEffect(() => {
     if (!user || !db) return;
     const unsubInv = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('inventory').onSnapshot(snap => setInventory(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
@@ -128,18 +110,25 @@ const App = () => {
   // 3. Dark Mode
   useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
+  // 4. LABOUR REDIRECT: If Labour tries to view Calculator, push them to Saved Quotes
+  useEffect(() => {
+    if (userRole === 'labour' && view === 'quote') {
+      setView('saved');
+    }
+  }, [userRole, view]);
+
   const handleLogout = () => {
     auth.signOut();
     setView('quote');
     setUser(null);
     setUserRole(null);
+    setIsMenuOpen(false);
   };
 
-  // --- SAVE QUOTE (Logic Preserved) ---
+  // --- SAVE LOGIC ---
   const handleSaveQuote = async (finalAmount) => {
     if (!calcState.client || !calcState.project) return alert("Please enter Client and Project names.");
 
-    // Calculate all screens data locally before saving (Preserved from your file)
     let allScreensData = null;
     if (calcState.screens && calcState.screens.length > 0) {
       const allCalculations = calcState.screens.map((screen) => {
@@ -154,7 +143,7 @@ const App = () => {
           totalLEDSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.led.sell * calc.screenQty), 0),
           totalServicesSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.sell.total - (calc.matrix.led.sell * calc.screenQty)), 0),
           totalMargin: 0,
-          totalScreenQty: allCalculations.reduce((sum, calc) => sum + calc.screenQty, 0),
+          totalScreenQty: allCalculations.reduce((sum, calc) => sum + Number(calc.screenQty), 0),
           calculations: allCalculations,
           screenConfigs: calcState.screens
         };
@@ -172,15 +161,13 @@ const App = () => {
         totalScreenQty: allScreensData?.totalScreenQty || 0,
         allScreensData: allScreensData,
         createdBy: user.email,
-        createdAt: new Date().toISOString()
+        updatedAt: new Date()
       });
       alert("Quote Saved Successfully!");
     } catch (e) { console.error(e); alert("Error saving quote."); }
   };
 
-  // --- LOAD QUOTE (Logic Preserved) ---
   const handleLoadQuote = (quote, isDuplicate) => {
-    // Deep merge to preserve new defaults
     const newState = { ...initialCalcState, ...quote.calculatorState };
     newState.terms = {
       ...initialCalcState.terms,
@@ -194,59 +181,77 @@ const App = () => {
     }
     setCalcState(newState);
     setView('quote');
+    setIsMenuOpen(false);
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>;
   if (!user) return <Login />;
 
-  // --- PERMISSION LOGIC (UPDATED) ---
-  const showUsersTab = userRole === 'super_admin';
+  // --- PERMISSION LOGIC ---
+  const safeRole = userRole || 'labour';
+  const showUsersTab = safeRole === 'super_admin';
+  const isInventoryReadOnly = ['labour', 'supervisor'].includes(safeRole);
+  const isLedgerReadOnly = ['labour'].includes(safeRole);
+  const isBOMReadOnly = ['labour', 'supervisor'].includes(safeRole);
 
-  // Inventory: Read Only for Labour AND Supervisor
-  const isInventoryReadOnly = ['labour', 'supervisor'].includes(userRole);
-
-  // Ledger: Read Only for Labour (Supervisor CAN write)
-  const isLedgerReadOnly = ['labour'].includes(userRole);
-
-  // Calculator: Read Only for Labour (Supervisor CAN write inputs but won't see prices)
-  const isCalculatorReadOnly = ['labour'].includes(userRole);
+  // Flag to hide Calculator Tab
+  const isLabour = safeRole === 'labour';
 
   return (
-    <div className="min-h-screen no-print pb-20 bg-slate-50 dark:bg-slate-900 transition-colors font-sans text-slate-900 dark:text-slate-100">
-      <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 px-4 md:px-6 h-16 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          <img src="/AdmireLED/logo.png" alt="Logo" className="h-10 w-auto" />
-        </div>
+    <div className={`min-h-screen transition-colors duration-200 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
 
-        <div className="flex gap-4 items-center">
-          <div className="hidden md:flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-            <button onClick={() => setView('quote')} className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
+      {/* HEADER */}
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/AdmireLED/logo.png" alt="Logo" className="h-10 w-auto" />
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+            {/* HIDE CALCULATOR FOR LABOUR */}
+            {!isLabour && (
+              <button onClick={() => setView('quote')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
+            )}
+
             <button onClick={() => setView('inventory')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
             <button onClick={() => setView('ledger')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
             <button onClick={() => setView('saved')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
-            {showUsersTab && <button onClick={() => setView('admin')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
-          </div>
 
+            {showUsersTab && <button onClick={() => setView('admin')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
+          </nav>
+
+          {/* User Controls */}
           <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
             <div className="text-right mr-2 hidden lg:block">
-              <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{userRole?.replace('_', ' ')}</div>
+              <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{safeRole.replace('_', ' ')}</div>
               <div className="text-[10px] text-slate-400">{user.username}</div>
             </div>
 
             <button onClick={handleLogout} className="hidden md:block p-2 bg-slate-100 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 dark:text-slate-400 hover:text-red-500 rounded-lg transition-colors"><LogOut size={18} /></button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 dark:text-slate-300">{isMenuOpen ? <X size={24} /> : <Menu size={24} />}</button>
+
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            {/* Mobile Menu Toggle */}
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-slate-600 dark:text-slate-300">
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Mobile Menu */}
+      {/* Mobile Dropdown Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xl absolute w-full z-50 animate-in slide-in-from-top-2">
           <div className="flex flex-col p-2 space-y-1">
-            <button onClick={() => { setView('quote'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'quote' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
-              <Calculator size={18} /> Calculator
-            </button>
+            {/* HIDE CALCULATOR FOR LABOUR IN MOBILE MENU */}
+            {!isLabour && (
+              <button onClick={() => { setView('quote'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'quote' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                <Calculator size={18} /> Calculator
+              </button>
+            )}
             <button onClick={() => { setView('inventory'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'inventory' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
               <Box size={18} /> Components
             </button>
@@ -256,11 +261,13 @@ const App = () => {
             <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
               <FileText size={18} /> Quotes
             </button>
+
             {showUsersTab && (
               <button onClick={() => { setView('admin'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'admin' ? 'bg-purple-50 text-purple-700 dark:bg-slate-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
                 <Shield size={18} /> Admin
               </button>
             )}
+
             <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">
               <button onClick={handleLogout} className="w-full p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
                 <LogOut size={18} /> Logout
@@ -299,7 +306,7 @@ const App = () => {
             transactions={transactions}
             exchangeRate={exchangeRate}
             onLoadQuote={handleLoadQuote}
-            readOnly={isCalculatorReadOnly}
+            readOnly={isBOMReadOnly}
           />
         )}
 
@@ -321,7 +328,7 @@ const App = () => {
             exchangeRate={exchangeRate}
             setExchangeRate={setExchangeRate}
             onSaveQuote={handleSaveQuote}
-            readOnly={isCalculatorReadOnly}
+            readOnly={isBOMReadOnly}
           />
         )}
       </main>

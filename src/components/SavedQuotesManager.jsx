@@ -3,7 +3,7 @@ import { Eye, Printer, Trash2, FileText, Download, Copy, Edit, Box } from 'lucid
 import { db, appId } from '../lib/firebase';
 import { formatCurrency, calculateBOM } from '../lib/utils';
 import PrintLayout from './PrintLayout';
-import BOMLayout from './BOMLayout'; // Import the BOM Layout for "Blind" View
+import BOMLayout from './BOMLayout'; // Import BOM Layout for Supervisor View
 
 const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoadQuote, readOnly = false }) => {
     const [quotes, setQuotes] = React.useState([]);
@@ -26,55 +26,61 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     };
 
     const handleView = (quote) => {
+        // Logic to prepare data for viewing
+        let dataToView = null;
+
         if (quote.allScreensData) {
-            setViewQuote({
+            dataToView = {
                 allScreensData: quote.allScreensData,
                 client: quote.client,
                 project: quote.project
-            });
-            return;
-        }
+            };
+        } else {
+            // Fallback for older quotes
+            const state = quote.calculatorState;
+            if (state.screens && state.screens.length > 0) {
+                const allCalculations = state.screens.map((screen) => {
+                    const screenCalcState = { ...state, ...screen };
+                    return calculateBOM(screenCalcState, inventory, transactions, exchangeRate);
+                }).filter(calc => calc !== null);
 
-        const state = quote.calculatorState;
-        if (state.screens && state.screens.length > 0) {
-            const allCalculations = state.screens.map((screen) => {
-                const screenCalcState = { ...state, ...screen };
-                return calculateBOM(screenCalcState, inventory, transactions, exchangeRate);
-            }).filter(calc => calc !== null);
+                if (allCalculations.length > 0) {
+                    const calculatedData = {
+                        totalProjectCost: allCalculations.reduce((sum, calc) => sum + calc.totalProjectCost, 0),
+                        totalProjectSell: allCalculations.reduce((sum, calc) => sum + calc.totalProjectSell, 0),
+                        totalLEDSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.led.sell * calc.screenQty), 0),
+                        totalServicesSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.sell.total - (calc.matrix.led.sell * calc.screenQty)), 0),
+                        totalMargin: 0,
+                        totalScreenQty: allCalculations.reduce((sum, calc) => sum + Number(calc.screenQty), 0),
+                        calculations: allCalculations,
+                        screenConfigs: state.screens
+                    };
+                    calculatedData.totalMargin = calculatedData.totalProjectSell - calculatedData.totalProjectCost;
 
-            if (allCalculations.length > 0) {
-                const calculatedData = {
-                    totalProjectCost: allCalculations.reduce((sum, calc) => sum + calc.totalProjectCost, 0),
-                    totalProjectSell: allCalculations.reduce((sum, calc) => sum + calc.totalProjectSell, 0),
-                    totalLEDSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.led.sell * calc.screenQty), 0),
-                    totalServicesSell: allCalculations.reduce((sum, calc) => sum + (calc.matrix.sell.total - (calc.matrix.led.sell * calc.screenQty)), 0),
-                    totalMargin: 0,
-                    totalScreenQty: allCalculations.reduce((sum, calc) => sum + Number(calc.screenQty), 0),
-                    calculations: allCalculations,
-                    screenConfigs: state.screens
-                };
-                calculatedData.totalMargin = calculatedData.totalProjectSell - calculatedData.totalProjectCost;
-
-                setViewQuote({
-                    allScreensData: calculatedData,
-                    client: quote.client,
-                    project: quote.project
-                });
-                return;
+                    dataToView = {
+                        allScreensData: calculatedData,
+                        client: quote.client,
+                        project: quote.project
+                    };
+                }
+            } else {
+                const result = calculateBOM(state, inventory, transactions, exchangeRate);
+                if (result) {
+                    dataToView = { data: result, client: quote.client, project: quote.project };
+                }
             }
         }
 
-        const result = calculateBOM(state, inventory, transactions, exchangeRate);
-        if (result) {
-            setViewQuote({ data: result, client: quote.client, project: quote.project });
+        if (dataToView) {
+            setViewQuote(dataToView);
         } else {
-            alert("Could not calculate quote. Inventory items might be missing.");
+            alert("Could not load quote data.");
         }
     };
 
     const handleDownloadExcel = (quote) => {
-        if (readOnly) return; // double check protection
-        // ... (Original Excel logic preserved below) ...
+        if (readOnly) return; // Security check
+
         let calculations = [];
         let grandTotalSell = 0;
         let grandTotalCost = 0;
@@ -147,7 +153,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     <div className="bg-white max-w-4xl w-full h-[90vh] rounded-lg shadow-2xl flex flex-col">
                         <div className="p-4 border-b flex justify-between items-center bg-slate-100 rounded-t-lg">
                             <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                                {/* DYNAMIC TITLE BASED ON ROLE */}
+                                {/* DYNAMIC TITLE */}
                                 {readOnly ? <Box size={20} className="text-teal-600" /> : <Eye size={20} />}
                                 {readOnly ? 'Bill of Materials (BOM)' : 'View Saved Quote'}
                             </h2>
@@ -164,7 +170,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto p-8 bg-slate-200">
-                            {/* BLIND MODE SWITCH: If readOnly, show BOM Layout. Else show Quote Layout */}
+                            {/* BLIND MODE SWITCH: If Supervisor (readOnly), show BOM only. No Prices. */}
                             {readOnly ? (
                                 <BOMLayout
                                     data={viewQuote.data ? { ...viewQuote.data, clientName: viewQuote.client, projectName: viewQuote.project } : null}
@@ -172,7 +178,6 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                         ...viewQuote.allScreensData,
                                         clientName: viewQuote.client,
                                         projectName: viewQuote.project,
-                                        // Ensure unit exists for display
                                         screenConfigs: viewQuote.allScreensData.screenConfigs?.map(s => ({ ...s, unit: s.unit || 'm' }))
                                     } : null}
                                     inventory={inventory}
@@ -227,7 +232,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                                 <span className="text-slate-600 dark:text-slate-300 font-medium">
                                                     Screen #{idx + 1} <span className="text-slate-400 font-normal">({calc.finalWidth}x{calc.finalHeight}m ×{calc.screenQty})</span>
                                                 </span>
-                                                {/* HIDE PRICE IN BREAKDOWN */}
+                                                {/* STRICTLY HIDE PRICE IN BREAKDOWN */}
                                                 {!readOnly && (
                                                     <span className="font-bold text-slate-800 dark:text-white">
                                                         {formatCurrency(calc.totalProjectSell, 'INR', true)}
@@ -243,7 +248,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                     )}
                                 </div>
 
-                                {/* HIDE TOTAL FOOTER IF READONLY */}
+                                {/* STRICTLY HIDE TOTAL FOOTER FOR SUPERVISOR */}
                                 {!readOnly && (
                                     <div className="flex justify-between items-end pt-2 border-t border-slate-100 dark:border-slate-700 mt-auto">
                                         <span className="text-xs font-bold text-slate-400 uppercase">Total Estimate</span>
@@ -252,14 +257,14 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                 )}
                             </div>
 
-                            {/* Action Buttons */}
+                            {/* Action Buttons: Only show View for Supervisors */}
                             <div className={`grid ${readOnly ? 'grid-cols-1' : 'grid-cols-5'} border-t border-slate-100 dark:border-slate-700 divide-x divide-slate-100 dark:divide-slate-700 bg-slate-50 dark:bg-slate-800`}>
                                 <button onClick={() => handleView(quote)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="View">
                                     {readOnly ? <Box size={16} /> : <Eye size={16} />}
                                     <span className="hidden sm:inline">{readOnly ? 'View BOM' : 'View'}</span>
                                 </button>
 
-                                {/* HIDE ALL OTHER ACTIONS FOR SUPERVISORS */}
+                                {/* REMOVED EXCEL, EDIT, CLONE, DELETE FOR SUPERVISORS */}
                                 {!readOnly && (
                                     <>
                                         <button onClick={() => onLoadQuote(quote, false)} className="py-3 flex flex-col items-center justify-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-white dark:hover:bg-slate-700 transition-colors" title="Edit">
