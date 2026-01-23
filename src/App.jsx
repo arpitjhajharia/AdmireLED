@@ -223,6 +223,20 @@ const App = () => {
 
           {/* User Controls */}
           <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
+
+            {/* Global Exchange Rate Input (Hidden for Labour) */}
+            {safeRole !== 'labour' && (
+              <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 mr-2">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">USD:</span>
+                <input
+                  type="number"
+                  value={exchangeRate}
+                  onChange={e => setExchangeRate(Number(e.target.value))}
+                  className="w-12 text-xs font-bold text-teal-600 dark:text-teal-400 bg-transparent outline-none text-right"
+                />
+              </div>
+            )}
+
             <div className="text-right mr-2 hidden lg:block">
               <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{safeRole.replace('_', ' ')}</div>
               <div className="text-[10px] text-slate-400">{user.username}</div>
