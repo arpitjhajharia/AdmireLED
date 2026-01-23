@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X } from 'lucide-react';
+import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X, DollarSign } from 'lucide-react';
 import { auth, db, appId } from './lib/firebase';
 import { calculateBOM, generateId } from './lib/utils';
 import { CONFIG } from './lib/config';
@@ -280,6 +280,19 @@ const App = () => {
               <button onClick={() => { setView('admin'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'admin' ? 'bg-purple-50 text-purple-700 dark:bg-slate-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
                 <Shield size={18} /> Admin
               </button>
+            )}
+
+            {/* Mobile Exchange Rate Input */}
+            {safeRole !== 'labour' && (
+              <div className="p-3 rounded-lg text-sm font-bold flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-3"><DollarSign size={18} /> USD Rate</div>
+                <input
+                  type="number"
+                  value={exchangeRate}
+                  onChange={e => setExchangeRate(Number(e.target.value))}
+                  className="w-20 p-1 text-right border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                />
+              </div>
             )}
 
             <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">

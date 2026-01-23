@@ -759,17 +759,6 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                             <Settings className="w-4 h-4 text-teal-600" /> Project Specs
                         </h3>
                         <div className="flex items-center gap-2">
-                            {/* USD RATE INPUT */}
-                            <div className="flex items-center gap-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-0.5 mr-2">
-                                <span className="text-[10px] font-bold text-slate-400">USD:</span>
-                                <input
-                                    type="number"
-                                    value={exchangeRate}
-                                    onChange={e => setExchangeRate(Number(e.target.value))}
-                                    className="w-10 text-xs font-bold text-teal-600 dark:text-teal-400 bg-transparent outline-none text-right"
-                                />
-                            </div>
-
                             <button onClick={handleReset} className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition-colors mr-2 flex items-center gap-1">
                                 <RefreshCw size={10} /> Reset
                             </button>
