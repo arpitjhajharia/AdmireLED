@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Archive, Trash2, Edit, X } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 
-const InventoryLedger = ({ user, inventory = [], transactions = [], readOnly = false }) => {
+const InventoryLedger = ({ user, userRole, inventory = [], transactions = [], readOnly = false }) => {
     // 1. Updated State to include 'batch'
     const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '', batch: '' });
     const [editingId, setEditingId] = useState(null);
@@ -44,6 +44,35 @@ const InventoryLedger = ({ user, inventory = [], transactions = [], readOnly = f
     // Sort: Latest first
     const sortedTx = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    // --- GROUPING & SORTING LOGIC FOR DROPDOWN ---
+    const getGroupedOptions = () => {
+        // 1. Group items by type
+        const groups = inventory.reduce((acc, item) => {
+            const type = item.type || 'Other';
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(item);
+            return acc;
+        }, {});
+
+        // 2. Sort group names alphabetically
+        const sortedGroupNames = Object.keys(groups).sort();
+
+        // 3. Render Optgroups
+        return sortedGroupNames.map(type => (
+            <optgroup key={type} label={type.replace(/_/g, ' ').toUpperCase()}>
+                {groups[type]
+                    // 4. Sort items inside group alphabetically by Brand + Model
+                    .sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model))
+                    .map(i => (
+                        <option key={i.id} value={i.id}>
+                            {i.brand} {i.model} {i.size ? `(${i.size})` : ''}
+                        </option>
+                    ))
+                }
+            </optgroup>
+        ));
+    };
+
     return (
         <div className="p-4 md:p-6 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-6">
@@ -84,9 +113,8 @@ const InventoryLedger = ({ user, inventory = [], transactions = [], readOnly = f
                             <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Component</label>
                             <select value={newTx.itemId} onChange={e => setNewTx({ ...newTx, itemId: e.target.value })} className="w-full p-2 text-sm border rounded dark:bg-slate-800 dark:border-slate-600 dark:text-white">
                                 <option value="">Select Item...</option>
-                                {inventory.sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model)).map(i => (
-                                    <option key={i.id} value={i.id}>{i.brand} {i.model} ({i.type})</option>
-                                ))}
+                                {/* CALLING THE GROUPED OPTIONS HELPER */}
+                                {getGroupedOptions()}
                             </select>
 
                             {/* 2. Conditional Batch Input for Modules */}
