@@ -35,48 +35,54 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
 
     // Helper to determine if Brand is mandatory
     const isBrandMandatory = (type) => {
-        return ['module', 'cabinet', 'card', 'smps', 'processor', 'ready', 'tool'].includes(type);
+        return true; // Brand is now compulsory for ALL types based on user request
     };
 
     const handleSaveItem = async () => {
         // --- VALIDATION LOGIC ---
 
-        // 1. Cables (FRC / Power) - Brand Optional
+        // 1. Cables (FRC / Power) - Brand Required, Vendor Optional
         if (['frc_cable', 'power_cable'].includes(newItem.type)) {
-            if (!newItem.model || !newItem.vendor || !newItem.ports || !newItem.length || !newItem.price) {
-                return alert("Required: Model, Vendor, No. of Pins, Length, and Price.");
+            if (!newItem.brand || !newItem.model || !newItem.ports || !newItem.length || !newItem.price) {
+                return alert("Required: Brand, Model, No. of Pins, Length, and Price.");
             }
         }
-        // 2. Fasteners (Screw / Bolt) - Brand Optional
+        // 2. Fasteners (Screw / Bolt) - Brand Required, Vendor Optional
         else if (['screw', 'bolt'].includes(newItem.type)) {
-            if (!newItem.model || !newItem.vendor || !newItem.material || !newItem.size || !newItem.length || !newItem.price) {
-                return alert("Required: Model, Vendor, Type (SS/MS), Size, Length, and Price.");
+            if (!newItem.brand || !newItem.model || !newItem.material || !newItem.size || !newItem.length || !newItem.price) {
+                return alert("Required: Brand, Model, Type (SS/MS), Size, Length, and Price.");
             }
         }
-        // 3. Gasket - Brand Optional
+        // 3. Gasket - Brand Required, Vendor Optional
         else if (newItem.type === 'gasket') {
-            if (!newItem.model || !newItem.vendor || !newItem.width || !newItem.length || !newItem.price) {
-                return alert("Required: Model, Vendor, Width, Length, and Price.");
+            if (!newItem.brand || !newItem.model || !newItem.width || !newItem.length || !newItem.price) {
+                return alert("Required: Brand, Model, Width, Length, and Price.");
             }
         }
-        // 4. Tools - Brand Required (Usually tracked by brand)
+        // 4. Tools - Brand Required, Vendor Optional
         else if (newItem.type === 'tool') {
             if (!newItem.brand || !newItem.model || !newItem.material || !newItem.price) {
                 return alert("Required: Brand, Model, Tool Type, and Price.");
             }
         }
-        // 5. Accessory - Brand Optional
+        // 5. Accessory - Brand Required
         else if (newItem.type === 'accessory') {
-            if (!newItem.model || !newItem.price) {
-                return alert("Model/Description and Price are required.");
+            if (!newItem.brand || !newItem.model || !newItem.price) {
+                return alert("Brand, Model/Description and Price are required.");
             }
         }
-        // 6. Core Components - Brand Required
-        else if (newItem.type === 'module') {
-            if (!newItem.pitch || !newItem.brand || !newItem.model || !newItem.price || !newItem.width || !newItem.height) {
-                return alert("Please fill all compulsory (*) fields.");
+        // 6. Core Components (Module/Ready) - Stricter Rules
+        else if (newItem.type === 'module' || newItem.type === 'ready') {
+            if (!newItem.pitch || !newItem.brand || !newItem.model || !newItem.price ||
+                !newItem.width || !newItem.height ||
+                !newItem.brightness || !newItem.refreshRate ||
+                !newItem.avgPower || !newItem.maxPower ||
+                !newItem.contrast || !newItem.viewAngleH || !newItem.viewAngleV ||
+                !newItem.ipFront || !newItem.ipBack) {
+                return alert("Please fill all compulsory (*) technical fields.");
             }
         }
+        // 7. Cabinet - Indoor/Outdoor Compulsory
         else if (newItem.type === 'cabinet') {
             if (!newItem.brand || !newItem.material || !newItem.model || !newItem.price || !newItem.width || !newItem.height) {
                 return alert("Please fill all compulsory (*) fields.");
@@ -89,11 +95,6 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
         }
         else if (newItem.type === 'smps') {
             if (!newItem.brand || !newItem.model || !newItem.price || !newItem.amps || !newItem.voltage) {
-                return alert("Please fill all compulsory (*) fields.");
-            }
-        }
-        else if (newItem.type === 'ready') {
-            if (!newItem.pitch || !newItem.brand || !newItem.model || !newItem.price) {
                 return alert("Please fill all compulsory (*) fields.");
             }
         }
@@ -277,7 +278,8 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
                         <div className="flex-1 min-w-[80px]"><input placeholder="Carriage" type="number" className="p-2 w-full border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.carriage} onChange={e => setNewItem({ ...newItem, carriage: e.target.value })} /></div>
                         <div className="flex-none mb-3"><select className="p-2 border rounded bg-slate-100 dark:bg-slate-600 dark:border-slate-600 dark:text-white" value={newItem.currency} onChange={e => setNewItem({ ...newItem, currency: e.target.value })}><option value="INR">INR</option><option value="USD">USD</option></select></div>
                     </div>
-                    {newItem.type !== 'cabinet' && <input placeholder="Vendor" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.vendor} onChange={e => setNewItem({ ...newItem, vendor: e.target.value })} />}
+                    {/* Vendor is now Optional for everyone */}
+                    <input placeholder="Vendor (Optional)" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.vendor} onChange={e => setNewItem({ ...newItem, vendor: e.target.value })} />
 
                     {/* --- CONDITIONAL FIELDS BASED ON NEW TYPES --- */}
 
@@ -316,7 +318,7 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
                     )}
 
 
-                    {/* --- ORIGINAL CONDITIONAL FIELDS --- */}
+                    {/* --- RESTORED CONDITIONAL FIELDS --- */}
 
                     {/* 1. Modules & Ready Units (Core Specs) */}
                     {(newItem.type === 'module' || newItem.type === 'ready') && (
@@ -327,29 +329,28 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
                                 <option value="false">Outdoor</option>
                             </select>
 
-                            {/* Restored Technical Inputs */}
                             <input placeholder="LED Type (e.g. SMD2121)" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ledType} onChange={e => setNewItem({ ...newItem, ledType: e.target.value })} />
                             <input placeholder="Lamp Make" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.lampMake} onChange={e => setNewItem({ ...newItem, lampMake: e.target.value })} />
 
                             <input placeholder="Width (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
                             <input placeholder="Height (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
 
-                            <input placeholder="Brightness (nits)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brightness} onChange={e => setNewItem({ ...newItem, brightness: e.target.value })} />
-                            <input placeholder="Refresh Rate (Hz)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.refreshRate} onChange={e => setNewItem({ ...newItem, refreshRate: e.target.value })} />
+                            <input placeholder="Brightness (nits)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brightness} onChange={e => setNewItem({ ...newItem, brightness: e.target.value })} />
+                            <input placeholder="Refresh Rate (Hz)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.refreshRate} onChange={e => setNewItem({ ...newItem, refreshRate: e.target.value })} />
 
-                            <input placeholder="Avg Power (W)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.avgPower} onChange={e => setNewItem({ ...newItem, avgPower: e.target.value })} />
-                            <input placeholder="Max Power (W)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.maxPower} onChange={e => setNewItem({ ...newItem, maxPower: e.target.value })} />
+                            <input placeholder="Avg Power (W)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.avgPower} onChange={e => setNewItem({ ...newItem, avgPower: e.target.value })} />
+                            <input placeholder="Max Power (W)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.maxPower} onChange={e => setNewItem({ ...newItem, maxPower: e.target.value })} />
 
-                            <input placeholder="Contrast Ratio" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.contrast} onChange={e => setNewItem({ ...newItem, contrast: e.target.value })} />
+                            <input placeholder="Contrast Ratio*" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.contrast} onChange={e => setNewItem({ ...newItem, contrast: e.target.value })} />
                             <input placeholder="Weight (kg)" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.weight} onChange={e => setNewItem({ ...newItem, weight: e.target.value })} />
 
                             <div className="flex gap-2 col-span-2 md:col-span-2">
-                                <input placeholder="View Angle (H)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleH} onChange={e => setNewItem({ ...newItem, viewAngleH: e.target.value })} />
-                                <input placeholder="View Angle (V)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleV} onChange={e => setNewItem({ ...newItem, viewAngleV: e.target.value })} />
+                                <input placeholder="View Angle (H)*" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleH} onChange={e => setNewItem({ ...newItem, viewAngleH: e.target.value })} />
+                                <input placeholder="View Angle (V)*" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleV} onChange={e => setNewItem({ ...newItem, viewAngleV: e.target.value })} />
                             </div>
                             <div className="flex gap-2 col-span-2 md:col-span-2">
-                                <input placeholder="IP Rating (Front)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipFront} onChange={e => setNewItem({ ...newItem, ipFront: e.target.value })} />
-                                <input placeholder="IP Rating (Back)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipBack} onChange={e => setNewItem({ ...newItem, ipBack: e.target.value })} />
+                                <input placeholder="IP Rating (Front)*" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipFront} onChange={e => setNewItem({ ...newItem, ipFront: e.target.value })} />
+                                <input placeholder="IP Rating (Back)*" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipBack} onChange={e => setNewItem({ ...newItem, ipBack: e.target.value })} />
                             </div>
                         </>
                     )}
