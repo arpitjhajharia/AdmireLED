@@ -317,17 +317,73 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
 
 
                     {/* --- ORIGINAL CONDITIONAL FIELDS --- */}
-                    {(newItem.type === 'module' || newItem.type === 'ready') && <><input placeholder="Pitch*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.pitch} onChange={e => setNewItem({ ...newItem, pitch: e.target.value })} /><select className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}><option value="true">Indoor</option><option value="false">Outdoor</option></select></>}
 
-                    {(newItem.type === 'card' || newItem.type === 'processor') && <input placeholder="Ports" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ports} onChange={e => setNewItem({ ...newItem, ports: e.target.value })} />}
+                    {/* 1. Modules & Ready Units (Core Specs) */}
+                    {(newItem.type === 'module' || newItem.type === 'ready') && (
+                        <>
+                            <input placeholder="Pitch (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.pitch} onChange={e => setNewItem({ ...newItem, pitch: e.target.value })} />
+                            <select className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white border-teal-500 ring-1 ring-teal-500" value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}>
+                                <option value="true">Indoor</option>
+                                <option value="false">Outdoor</option>
+                            </select>
 
-                    {newItem.type === 'smps' && <><input placeholder="Amps" type="number" step="0.1" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.amps} onChange={e => setNewItem({ ...newItem, amps: e.target.value })} /><input placeholder="Voltage" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.voltage} onChange={e => setNewItem({ ...newItem, voltage: e.target.value })} /></>}
+                            {/* Restored Technical Inputs */}
+                            <input placeholder="LED Type (e.g. SMD2121)" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ledType} onChange={e => setNewItem({ ...newItem, ledType: e.target.value })} />
+                            <input placeholder="Lamp Make" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.lampMake} onChange={e => setNewItem({ ...newItem, lampMake: e.target.value })} />
 
-                    {newItem.type === 'module' && <><input placeholder="LED Type" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ledType} onChange={e => setNewItem({ ...newItem, ledType: e.target.value })} /><input placeholder="Width (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} /><input placeholder="Height (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} /></>}
+                            <input placeholder="Width (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
+                            <input placeholder="Height (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
 
-                    {newItem.type === 'cabinet' && <><input placeholder="Material" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.material} onChange={e => setNewItem({ ...newItem, material: e.target.value })} /><select className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}><option value="true">Indoor</option><option value="false">Outdoor</option></select><input placeholder="Width (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} /><input placeholder="Height (mm)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} /></>}
+                            <input placeholder="Brightness (nits)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.brightness} onChange={e => setNewItem({ ...newItem, brightness: e.target.value })} />
+                            <input placeholder="Refresh Rate (Hz)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.refreshRate} onChange={e => setNewItem({ ...newItem, refreshRate: e.target.value })} />
 
-                    <button onClick={handleSaveItem} className={`px-4 py-2 rounded text-white flex items-center justify-center gap-2 hover:opacity-90 transition ${editingId ? 'bg-amber-600' : 'bg-teal-600'} col-span-2 md:col-span-1`}>{editingId ? <Edit size={16} /> : <Plus size={16} />} {editingId ? 'Update Item' : 'Add Item'}</button>
+                            <input placeholder="Avg Power (W)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.avgPower} onChange={e => setNewItem({ ...newItem, avgPower: e.target.value })} />
+                            <input placeholder="Max Power (W)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.maxPower} onChange={e => setNewItem({ ...newItem, maxPower: e.target.value })} />
+
+                            <input placeholder="Contrast Ratio" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.contrast} onChange={e => setNewItem({ ...newItem, contrast: e.target.value })} />
+                            <input placeholder="Weight (kg)" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.weight} onChange={e => setNewItem({ ...newItem, weight: e.target.value })} />
+
+                            <div className="flex gap-2 col-span-2 md:col-span-2">
+                                <input placeholder="View Angle (H)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleH} onChange={e => setNewItem({ ...newItem, viewAngleH: e.target.value })} />
+                                <input placeholder="View Angle (V)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.viewAngleV} onChange={e => setNewItem({ ...newItem, viewAngleV: e.target.value })} />
+                            </div>
+                            <div className="flex gap-2 col-span-2 md:col-span-2">
+                                <input placeholder="IP Rating (Front)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipFront} onChange={e => setNewItem({ ...newItem, ipFront: e.target.value })} />
+                                <input placeholder="IP Rating (Back)" className="flex-1 p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ipBack} onChange={e => setNewItem({ ...newItem, ipBack: e.target.value })} />
+                            </div>
+                        </>
+                    )}
+
+                    {/* 2. Cabinets */}
+                    {newItem.type === 'cabinet' && (
+                        <>
+                            <input placeholder="Material (e.g. Die-Cast)" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.material} onChange={e => setNewItem({ ...newItem, material: e.target.value })} />
+                            <select className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}>
+                                <option value="true">Indoor</option>
+                                <option value="false">Outdoor</option>
+                            </select>
+                            <input placeholder="Width (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
+                            <input placeholder="Height (mm)*" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
+                            <input placeholder="Weight (kg)" type="number" step="0.01" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.weight} onChange={e => setNewItem({ ...newItem, weight: e.target.value })} />
+                        </>
+                    )}
+
+                    {/* 3. Electronics */}
+                    {(newItem.type === 'card' || newItem.type === 'processor') && (
+                        <input placeholder="Ports / Capacity" type="text" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.ports} onChange={e => setNewItem({ ...newItem, ports: e.target.value })} />
+                    )}
+
+                    {/* 4. Power */}
+                    {newItem.type === 'smps' && (
+                        <>
+                            <input placeholder="Amps (A)" type="number" step="0.1" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.amps} onChange={e => setNewItem({ ...newItem, amps: e.target.value })} />
+                            <input placeholder="Voltage (V)" type="number" className="p-2 border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newItem.voltage} onChange={e => setNewItem({ ...newItem, voltage: e.target.value })} />
+                        </>
+                    )}
+
+                    <button onClick={handleSaveItem} className={`px-4 py-2 rounded text-white flex items-center justify-center gap-2 hover:opacity-90 transition ${editingId ? 'bg-amber-600' : 'bg-teal-600'} col-span-2 md:col-span-4`}>
+                        {editingId ? <Edit size={16} /> : <Plus size={16} />} {editingId ? 'Update Item' : 'Add Item'}
+                    </button>
                 </div>
             )}
 
