@@ -194,7 +194,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
 
     // 2. Mobile Card Row
     const renderMobileRow = (item) => (
-        <div key={item.id} className={`bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm ${item.isOverridden ? 'ring-1 ring-amber-400 bg-amber-50 dark:bg-amber-900/10' : ''}`}>
+        <div key={item.id} className={`bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 mb-2 shadow-sm ${item.isOverridden ? 'ring-1 ring-amber-400 bg-amber-50 dark:bg-amber-900/10' : ''}`}>
             <div className="flex justify-between items-center mb-2">
                 <span className="text-xs font-bold uppercase text-slate-500">{item.name}</span>
                 {calculation && !isSupervisor && (
@@ -209,7 +209,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                 {renderComponentCell(item)}
             </div>
 
-            <div className={`grid ${isSupervisor ? 'grid-cols-1' : 'grid-cols-3'} gap-2 text-xs bg-slate-50 dark:bg-slate-700/50 p-2 rounded`}>
+            <div className={`grid ${isSupervisor ? 'grid-cols-1' : 'grid-cols-3'} gap-2 text-xs bg-slate-50 dark:bg-slate-700/50 p-1.5 rounded`}>
                 {!isSupervisor && (
                     <div>
                         <span className="block text-[9px] uppercase text-slate-400 font-bold mb-1">Rate</span>
@@ -245,7 +245,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                        <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                        <tr className="bg-slate-50 dark:bg-slate-800 text-[11px] text-slate-500 dark:text-slate-300 font-bold uppercase tracking-wider">
                             <th className="p-2">Component Selection</th>
                             {!isSupervisor && <th className="p-2 text-right">Rate (Cost)</th>}
                             <th className="p-2 text-center border-l border-slate-200 dark:border-slate-700">Qty/Scrn</th>
@@ -368,7 +368,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                 {!isSupervisor && (
                     <>
                         {(Array.isArray(extras) ? extras : []).map((item, idx) => (
-                            <div key={item.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm flex items-center justify-between">
+                            <div key={item.id} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 mb-2 shadow-sm flex items-center justify-between">
                                 <div className="flex-1">
                                     <input type="text" value={item.name} onChange={e => handleUpdateExtra(idx, 'name', e.target.value)} className="text-xs font-bold border-b border-transparent focus:border-teal-500 bg-transparent outline-none w-full text-slate-600 dark:text-slate-300" />
                                 </div>
@@ -381,7 +381,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                         ))}
                         <button onClick={handleAddExtra} className="w-full py-2 mb-4 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold flex items-center justify-center gap-2"><Plus size={14} /> Add Overhead Cost</button>
 
-                        <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg border border-teal-100 dark:border-teal-800 mb-6">
+                        <div className="bg-teal-50 dark:bg-teal-900/20 p-2.5 rounded-lg border border-teal-100 dark:border-teal-800 mb-4">
                             <div className="flex justify-between items-center text-xs font-bold text-teal-800 dark:text-teal-300">
                                 <span>Sub-total (LED Panel)</span>
                                 <span>{formatCurrency(ledPanelSubtotal, 'INR', false)}</span>
@@ -398,7 +398,7 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                             const costKey = sellKey === 'installation' ? 'install' : 'structure';
                             const label = sellKey === 'installation' ? 'Installation' : 'Structure';
                             return (
-                                <div key={sellKey} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-3 shadow-sm">
+                                <div key={sellKey} className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 mb-2 shadow-sm">
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-xs font-bold uppercase text-slate-500">{label}</span>
                                         <select value={commercials[sellKey]?.unit || 'sqft'} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, [sellKey]: { ...commercials[sellKey], unit: e.target.value } })} className="text-[10px] p-0.5 border rounded bg-slate-50 dark:bg-slate-700"><option value="sqft">/Sq.Ft</option><option value="screen">/Screen</option></select>
@@ -422,14 +422,14 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
                             );
                         })}
 
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 mb-6">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
                             <div className="flex justify-between items-center text-xs font-bold text-blue-800 dark:text-blue-300">
                                 <span>Sub-total (Additional)</span>
                                 <span>{formatCurrency(additionalSubtotal, 'INR', false)}</span>
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 p-4 rounded-lg text-white shadow-lg">
+                        <div className="bg-slate-900 p-3 rounded-lg text-white shadow-lg">
                             <div className="flex justify-between items-end mb-1">
                                 <span className="text-xs uppercase text-slate-400 font-bold">Grand Total (Cost)</span>
                                 <span className="text-lg font-bold">{formatCurrency(grandTotal, 'INR', false)}</span>
@@ -679,13 +679,13 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
     }, [debouncedState, inventory, exchangeRate]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 relative items-start">
 
             {/* --- Modals --- */}
             {showBOM && (calculation || allScreensTotal) && (
-                <div className="fixed inset-0 z-[100] bg-black/80 flex justify-center items-center p-4">
-                    <div className="bg-white dark:bg-slate-900 max-w-5xl w-full h-[90vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
+                    <div className="bg-white dark:bg-slate-900 max-w-5xl w-full h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden">
+                        <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
                             <div className="flex items-center gap-4">
                                 <h2 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2">
                                     <FileText size={20} className="text-teal-600" /> BOM
@@ -723,9 +723,9 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
             )}
 
             {showPreview && (calculation || allScreensTotal) && (
-                <div className="fixed inset-0 z-[100] bg-black/80 flex justify-center items-center p-4">
-                    <div className="bg-white max-w-4xl w-full h-[90vh] rounded-lg shadow-2xl flex flex-col">
-                        <div className="p-4 border-b flex justify-between items-center bg-slate-100 rounded-t-lg">
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex justify-center items-center p-4">
+                    <div className="bg-white max-w-4xl w-full h-[90vh] rounded-xl shadow-2xl flex flex-col">
+                        <div className="p-3 border-b flex justify-between items-center bg-slate-100 rounded-t-xl">
                             <h2 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Eye size={20} /> Print Preview</h2>
                             <div className="flex gap-2">
                                 <button onClick={() => setShowPreview(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded">Close</button>
@@ -750,13 +750,16 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
             )}
 
             {/* --- Left Column --- */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-4">
 
                 {/* Project Specs */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="bg-slate-50/50 dark:bg-slate-800/50 px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
-                            <Settings className="w-4 h-4 text-teal-600" /> Project Specs
+                    <div className="bg-slate-50/50 dark:bg-slate-800/50 px-3 py-2.5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <h3 className="font-extrabold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+                            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-slate-800 to-slate-600 flex items-center justify-center">
+                                <Settings className="w-3 h-3 text-white" />
+                            </div>
+                            Project Specs
                         </h3>
                         <div className="flex items-center gap-2">
                             <button onClick={handleReset} className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition-colors mr-2 flex items-center gap-1">
@@ -769,8 +772,8 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                         </div>
                     </div>
 
-                    <div className="p-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 space-y-2.5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div className="relative group">
                                 <label className="absolute -top-1.5 left-2 bg-white dark:bg-slate-800 px-1 text-[10px] font-bold text-teal-600 dark:text-teal-400">CLIENT</label>
                                 <input value={client} onChange={e => updateState('client', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 dark:text-white transition-all" placeholder="Client Name" />
@@ -781,7 +784,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div className="flex items-center border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden h-8">
                                 <div className="bg-slate-100 dark:bg-slate-700 px-3 h-full flex items-center border-r border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase w-20 justify-center">Type</div>
                                 <div className="flex-1 flex p-0.5 bg-slate-50 dark:bg-slate-800 h-full">
@@ -800,7 +803,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                         </div>
 
                         <div>
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center mb-1.5">
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Screen Configurations</label>
                                 <button onClick={addScreen} className="text-[10px] font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center gap-1 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded transition-colors border border-teal-100 dark:border-teal-800">
                                     <Plus size={12} /> Add Size
@@ -821,7 +824,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                     <div
                                         key={screen.id}
                                         onClick={() => setState({ ...state, activeScreenIndex: index })}
-                                        className={`grid grid-cols-4 md:grid-cols-12 gap-3 items-start p-3 rounded-lg border transition-all cursor-pointer ${state.activeScreenIndex === index ? 'border-teal-500 ring-1 ring-teal-500 bg-teal-50/50 dark:bg-teal-900/10' : 'border-slate-200 dark:border-slate-700 hover:border-teal-300'}`}
+                                        className={`grid grid-cols-4 md:grid-cols-12 gap-2 items-start p-2 rounded-lg border transition-all cursor-pointer ${state.activeScreenIndex === index ? 'border-teal-500 ring-1 ring-teal-500 bg-teal-50/50 dark:bg-teal-900/10' : 'border-slate-200 dark:border-slate-700 hover:border-teal-300'}`}
                                     >
                                         {/* 1. Header: Index & Mobile Actions */}
                                         <div className="col-span-4 md:col-span-1 flex justify-between md:justify-center items-center border-b md:border-b-0 pb-2 md:pb-0 mb-1 md:mb-0">
@@ -863,8 +866,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                                 type="number"
                                                 value={screen.targetWidth}
                                                 onChange={e => updateScreenProp(index, 'targetWidth', e.target.value)}
-                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
-                                                placeholder="W"
+                                                className="w-full p-1.5 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
                                             />
                                         </div>
 
@@ -875,7 +877,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                                 type="number"
                                                 value={screen.targetHeight}
                                                 onChange={e => updateScreenProp(index, 'targetHeight', e.target.value)}
-                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
+                                                className="w-full p-1.5 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
                                                 placeholder="H"
                                             />
                                         </div>
@@ -887,7 +889,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                                 type="number"
                                                 value={screen.screenQty}
                                                 onChange={e => updateScreenProp(index, 'screenQty', e.target.value)}
-                                                className="w-full p-2 text-center text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
+                                                className="w-full p-1.5 text-center text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:border-teal-500 outline-none"
                                                 placeholder="Qty"
                                             />
                                         </div>
@@ -898,7 +900,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                             <select
                                                 value={screen.sizingMode}
                                                 onChange={e => updateScreenProp(index, 'sizingMode', e.target.value)}
-                                                className="w-full p-2 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white bg-white outline-none"
+                                                className="w-full p-1.5 text-sm border rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white bg-white outline-none"
                                             >
                                                 <option value="closest">Closest</option>
                                                 <option value="up">Round Up</option>
@@ -944,10 +946,13 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
 
                 {/* Detailed Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <details className="group p-4" open>
+                    <details className="group p-3" open>
                         <summary className="flex justify-between items-center cursor-pointer list-none">
-                            <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                <Box className="w-4 h-4 text-teal-600" /> Hardware & Cost Breakdown
+                            <h3 className="font-extrabold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+                                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-slate-800 to-slate-600 flex items-center justify-center">
+                                    <Box className="w-3 h-3 text-white" />
+                                </div>
+                                Hardware & Cost Breakdown
                                 {state.screens.length > 1 && (
                                     <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
                                         (Screen #{state.activeScreenIndex + 1} of {state.screens.length})
@@ -959,9 +964,9 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                 <span className="text-slate-400 text-xs hidden group-open:block">Hide Table</span>
                             </div>
                         </summary>
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                             {state.screens.length > 1 && (
-                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                                <div className="flex gap-1.5 mb-3 overflow-x-auto pb-2">
                                     {state.screens.map((screen, index) => {
                                         const isActive = state.activeScreenIndex === index;
                                         const screenLabel = screen.targetWidth && screen.targetHeight
@@ -972,7 +977,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                             <button
                                                 key={screen.id}
                                                 onClick={() => updateState('activeScreenIndex', index)}
-                                                className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isActive
+                                                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
                                                     ? 'bg-teal-600 text-white shadow-lg'
                                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                     }`}
@@ -988,8 +993,8 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                             )}
 
                             {state.screens[state.activeScreenIndex] && (
-                                <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-600">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <div className="mb-3 p-2 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-600">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                                         <div>
                                             <span className="text-slate-500 dark:text-slate-400 font-semibold">Dimensions:</span>
                                             <span className="ml-2 font-bold text-slate-800 dark:text-white">
@@ -1042,12 +1047,12 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                 {/* Terms - HIDDEN FOR SUPERVISOR */}
                 {!isSupervisor && (
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                        <details className="group p-4">
+                        <details className="group p-3">
                             <summary className="flex justify-between items-center cursor-pointer list-none">
                                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Terms & Conditions</span>
                                 <span className="text-teal-600 text-xs group-open:hidden">Show Details</span>
                             </summary>
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                                 <div><label className="text-[10px] uppercase font-bold text-slate-400">Price Basis</label><input value={state.terms?.price} onChange={e => setState(p => ({ ...p, terms: { ...p.terms, price: e.target.value } }))} className="w-full p-2 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" /></div>
                                 <div><label className="text-[10px] uppercase font-bold text-slate-400">Delivery Weeks</label><input type="number" value={state.terms?.deliveryWeeks} onChange={e => setState(p => ({ ...p, terms: { ...p.terms, deliveryWeeks: e.target.value } }))} className="w-full p-2 border rounded text-xs dark:bg-slate-700 dark:border-slate-600 dark:text-white" /></div>
                                 <div className="col-span-1 md:col-span-2">
@@ -1089,15 +1094,15 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                         </details>
                     </div>
                 )}
-                <div className="h-10"></div>
+                <div className="h-6"></div>
             </div>
 
             {/* --- Right Column (Sticky) --- */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="p-5 bg-gradient-to-br from-slate-50 to-white dark:from-slate-700 dark:to-slate-800">
+                    <div className="p-4 bg-gradient-to-br from-slate-50 to-white dark:from-slate-700 dark:to-slate-800">
                         {state.screens.length > 1 && allScreensTotal && (
-                            <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-600">
+                            <div className="mb-3 pb-3 border-b border-slate-200 dark:border-slate-600">
                                 <div className="text-[10px] uppercase font-bold text-slate-400 mb-2">Project Summary</div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
@@ -1139,7 +1144,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 mb-6">
+                                <div className="flex items-center gap-2 mb-4">
                                     <input
                                         type="number"
                                         value={state.pricingMode === 'margin' ? margin : state.targetSellPrice}
@@ -1163,7 +1168,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-600">
+                                <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-600">
                                     {state.screens.length > 1 ? (
                                         <>
                                             <div className="flex justify-between items-end">
@@ -1228,7 +1233,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                         )}
                     </div>
 
-                    <div className="bg-slate-900 p-5 text-white">
+                    <div className="bg-slate-900 p-4 text-white">
                         {/* HIDE GRAND TOTAL FOR SUPERVISOR */}
                         {!isSupervisor ? (
                             <>
@@ -1252,7 +1257,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                             </div>
                         )}
 
-                        <div className="flex gap-2 mt-4">
+                        <div className="flex gap-2 mt-3">
                             <button onClick={() => setShowBOM(true)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border border-slate-700 py-2">
                                 <FileText size={16} className="text-blue-400" /> BOM
                             </button>
@@ -1277,7 +1282,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                     </div>
                 </div>
 
-                <div className="bg-slate-900 rounded-xl shadow-lg p-6 text-white overflow-hidden relative min-h-[250px] flex items-center justify-center">
+                <div className="bg-slate-900 rounded-xl shadow-lg p-4 text-white overflow-hidden relative min-h-[250px] flex items-center justify-center">
                     {calculation ? (
                         <div className="w-full h-full flex items-center justify-center p-4">
                             <ScreenVisualizer cols={calculation.gridCols} rows={calculation.gridRows} module={calculation.moduleType} cabinet={calculation.cabinetType} unit={unit} />

@@ -219,7 +219,7 @@ const App = () => {
 
       {/* HEADER */}
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/AdmireLED/logo.png" alt="Logo" className="h-10 w-auto" />
           </div>
@@ -228,14 +228,14 @@ const App = () => {
           <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
             {/* HIDE CALCULATOR FOR LABOUR */}
             {!isLabour && (
-              <button onClick={() => setView('quote')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
+              <button onClick={() => setView('quote')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
             )}
 
-            <button onClick={() => setView('inventory')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
-            <button onClick={() => setView('ledger')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
-            <button onClick={() => setView('saved')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
+            <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
+            <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
+            <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
 
-            {showUsersTab && <button onClick={() => setView('admin')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
+            {showUsersTab && <button onClick={() => setView('admin')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
           </nav>
 
           {/* User Controls */}
@@ -355,7 +355,7 @@ const App = () => {
         )}
 
         {view === 'admin' && showUsersTab && (
-          <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="space-y-4 animate-in fade-in duration-300">
             <UserManager user={user} />
             <BackupManager />
           </div>

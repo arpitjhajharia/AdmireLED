@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, appId } from '../lib/firebase';
-import { Save, RotateCcw, AlertTriangle, Check, Loader, Clock, ShieldCheck } from 'lucide-react';
+import { Save, RotateCcw, AlertTriangle, Check, Loader, Clock, ShieldCheck, Database } from 'lucide-react';
 
 const BackupManager = () => {
     const [backups, setBackups] = useState([]);
@@ -65,7 +65,7 @@ const BackupManager = () => {
         await backupRef.set({
             timestamp: payload.timestamp,
             stats: payload.stats,
-            isSafetySnapshot: isSafety, // Flag to distinguish auto-backups from manual ones
+            isSafetySnapshot: isSafety,
             payload: JSON.stringify(payload.data)
         });
     };
@@ -100,8 +100,7 @@ const BackupManager = () => {
         setLoading(true);
         try {
             // 1. AUTOMATIC SAFETY SNAPSHOT
-            // Before wiping data, we save the current state just in case.
-            if (!backup.isSafetySnapshot) { // Don't create a safety snapshot if we are ALREADY restoring a safety snapshot (prevents loops)
+            if (!backup.isSafetySnapshot) {
                 console.log("Creating safety snapshot...");
                 const currentData = await fetchFullDatabase();
                 await saveBackupToFirestore(currentData, true);
@@ -160,19 +159,32 @@ const BackupManager = () => {
     const isFresh = lastBackupTime && (new Date() - lastBackupTime) < (24 * 60 * 60 * 1000); // 24 hours
 
     return (
-        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-800 dark:text-white">
-                <RotateCcw className="text-blue-600" /> Disaster Recovery
-            </h2>
+        <div className="p-3 md:p-4">
+            {/* ── Header ── */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-800 to-slate-600 flex items-center justify-center shadow-sm">
+                        <Database className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-extrabold tracking-tight text-slate-800 dark:text-white leading-none">
+                            Disaster Recovery
+                        </h2>
+                        <p className="text-[11px] font-medium text-slate-400 mt-0.5 tracking-wide uppercase">
+                            {backups.length} {backups.length === 1 ? 'snapshot' : 'snapshots'} stored
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-            {/* Smart Status Card */}
-            <div className={`p-4 rounded-lg mb-6 border flex flex-col md:flex-row justify-between items-center gap-4 ${isFresh ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'}`}>
+            {/* ── Smart Status Card ── */}
+            <div className={`p-3 rounded-xl mb-4 border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${isFresh ? 'bg-green-50/80 border-green-200/80 dark:bg-green-900/20 dark:border-green-800' : 'bg-amber-50/80 border-amber-200/80 dark:bg-amber-900/20 dark:border-amber-800'}`}>
                 <div>
-                    <h3 className={`text-sm font-bold flex items-center gap-2 ${isFresh ? 'text-green-800 dark:text-green-300' : 'text-amber-800 dark:text-amber-300'}`}>
-                        {isFresh ? <Check size={16} /> : <AlertTriangle size={16} />}
+                    <h3 className={`text-sm font-bold flex items-center gap-1.5 ${isFresh ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                        {isFresh ? <Check size={14} /> : <AlertTriangle size={14} />}
                         {isFresh ? "System is Backed Up" : "Daily Backup Pending"}
                     </h3>
-                    <p className="text-xs opacity-80 mt-1">
+                    <p className={`text-[11px] mt-0.5 ${isFresh ? 'text-green-600/70 dark:text-green-400/70' : 'text-amber-600/70 dark:text-amber-400/70'}`}>
                         {lastBackupTime
                             ? `Last manual snapshot: ${lastBackupTime.toLocaleString()}`
                             : "No manual backups found."}
@@ -181,41 +193,48 @@ const BackupManager = () => {
                 <button
                     onClick={createSnapshot}
                     disabled={loading}
-                    className={`whitespace-nowrap flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm ${isFresh ? 'bg-white text-green-700 border border-green-200 hover:bg-green-50' : 'bg-amber-600 text-white hover:bg-amber-700'}`}
+                    className={`flex-shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm ${isFresh ? 'bg-white dark:bg-slate-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30' : 'bg-amber-600 text-white hover:bg-amber-700'}`}
                 >
-                    {loading ? <Loader className="animate-spin" size={16} /> : <Save size={16} />}
-                    {isFresh ? "Create New Snapshot" : "Backup Now"}
+                    {loading ? <Loader className="animate-spin" size={15} /> : <Save size={15} />}
+                    {isFresh ? "New Snapshot" : "Backup Now"}
                 </button>
             </div>
 
-            <div className="mt-8">
-                <h3 className="text-xs font-bold uppercase text-slate-500 mb-3">Snapshot History</h3>
-                <div className="space-y-3">
-                    {backups.map(b => (
-                        <div key={b.id} className={`flex items-center justify-between p-3 border rounded-lg ${b.isSafetySnapshot ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-slate-50 border-slate-200 dark:bg-slate-700/30 dark:border-slate-700'}`}>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    {b.isSafetySnapshot && <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-1.5 rounded border border-indigo-200 flex items-center gap-1"><ShieldCheck size={10} /> Safety Auto-Save</span>}
-                                    <div className="text-sm font-bold text-slate-700 dark:text-white">
-                                        {new Date(b.timestamp).toLocaleString()}
-                                    </div>
-                                </div>
-                                <div className="text-[10px] text-slate-500 mt-1 flex gap-2 flex-wrap">
-                                    <span className="bg-white dark:bg-slate-600 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-500">📦 {b.stats.inventory} Items</span>
-                                    <span className="bg-white dark:bg-slate-600 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-500">📄 {b.stats.quotes} Quotes</span>
-                                    <span className="bg-white dark:bg-slate-600 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-500">📝 {b.stats.transactions} Tx</span>
-                                </div>
+            {/* ── Snapshot History ── */}
+            <div className="space-y-2">
+                {backups.map(b => (
+                    <div key={b.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${b.isSafetySnapshot ? 'bg-indigo-50/60 border-indigo-200/80 dark:bg-indigo-900/15 dark:border-indigo-800' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'} hover:shadow-sm`}>
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {b.isSafetySnapshot && (
+                                    <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-1.5 py-px rounded-full ring-1 ring-indigo-200/60 flex items-center gap-1">
+                                        <ShieldCheck size={10} /> Safety
+                                    </span>
+                                )}
+                                <span className="text-sm font-bold text-slate-700 dark:text-white tabular-nums">
+                                    {new Date(b.timestamp).toLocaleString()}
+                                </span>
                             </div>
-                            <button
-                                onClick={() => restoreSnapshot(b)}
-                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded text-xs font-bold border border-transparent hover:border-blue-200 transition-all flex items-center gap-1"
-                            >
-                                <RotateCcw size={12} /> Restore
-                            </button>
+                            <div className="text-[10px] text-slate-400 mt-1 flex gap-1.5 flex-wrap">
+                                <span className="bg-slate-50 dark:bg-slate-700/50 px-1.5 py-px rounded-full ring-1 ring-slate-200/60 dark:ring-slate-600">📦 {b.stats.inventory}</span>
+                                <span className="bg-slate-50 dark:bg-slate-700/50 px-1.5 py-px rounded-full ring-1 ring-slate-200/60 dark:ring-slate-600">📄 {b.stats.quotes}</span>
+                                <span className="bg-slate-50 dark:bg-slate-700/50 px-1.5 py-px rounded-full ring-1 ring-slate-200/60 dark:ring-slate-600">📝 {b.stats.transactions}</span>
+                            </div>
                         </div>
-                    ))}
-                    {backups.length === 0 && <div className="text-center text-xs text-slate-400 py-4">No backups found.</div>}
-                </div>
+                        <button
+                            onClick={() => restoreSnapshot(b)}
+                            className="flex-shrink-0 quote-action-btn text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        >
+                            <RotateCcw size={12} /> Restore
+                        </button>
+                    </div>
+                ))}
+                {backups.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <Database className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-2" />
+                        <p className="text-sm text-slate-400">No backups found.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

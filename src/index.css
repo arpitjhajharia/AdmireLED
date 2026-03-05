@@ -33,6 +33,94 @@ body {
   width: 4px;
 }
 
+/* --- Saved Quotes Card Animations --- */
+@keyframes quote-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shimmer-price {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.quote-card-animate {
+  animation: quote-card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.quote-card-animate:nth-child(1) { animation-delay: 0.03s; }
+.quote-card-animate:nth-child(2) { animation-delay: 0.08s; }
+.quote-card-animate:nth-child(3) { animation-delay: 0.13s; }
+.quote-card-animate:nth-child(4) { animation-delay: 0.18s; }
+.quote-card-animate:nth-child(5) { animation-delay: 0.23s; }
+.quote-card-animate:nth-child(6) { animation-delay: 0.28s; }
+.quote-card-animate:nth-child(7) { animation-delay: 0.33s; }
+.quote-card-animate:nth-child(8) { animation-delay: 0.38s; }
+.quote-card-animate:nth-child(9) { animation-delay: 0.43s; }
+
+.price-shimmer {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    rgba(255,255,255,0.5) 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.price-shimmer:hover {
+  animation: shimmer-price 1.8s ease-in-out;
+}
+
+/* Refined quote action button hover */
+.quote-action-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.quote-action-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border-radius: inherit;
+}
+
+.quote-action-btn:hover::after {
+  opacity: 0.06;
+}
+
+.quote-action-btn:active {
+  transform: scale(0.93);
+}
+
+/* Card accent stripe */
+.card-stripe-outdoor {
+  background: linear-gradient(180deg, #f59e0b, #ea580c);
+}
+
+.card-stripe-indoor {
+  background: linear-gradient(180deg, #3b82f6, #06b6d4);
+}
+
 /* --- GLOBAL PRINT STYLES --- */
 @media print {
 
