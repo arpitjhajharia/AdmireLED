@@ -72,8 +72,8 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                 const sellStructure = (comms.sellStructureTotal || 0) / (screenQty || 1);
 
                 const sellLEDBase = sellTotalPerScreen - sellProc - sellInstall - sellStructure;
-                const sellSpares = sellLEDBase * 0.02;
-                const sellLEDFinal = sellLEDBase - sellSpares;
+                const sellLEDFinal = sellLEDBase / 1.02;
+                const sellSpares = sellLEDFinal * 0.02;
 
                 const ledPanelLabel = pricingMode === 'sqft' && targetSellPrice
                     ? `LED Panel (${formatCurrency(targetSellPrice, currency)} per sqft)`
