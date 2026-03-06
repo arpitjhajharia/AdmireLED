@@ -321,7 +321,15 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
         assemblyMode,
         // 3. Return the numeric screenQty, so external components use the Number, not String
         screenQty,
-        commercials: { sellProcTotal, sellInstallTotal, sellStructureTotal },
+        commercials: {
+            sellProcTotal, sellInstallTotal, sellStructureTotal,
+            installationUnit: comms.installation?.unit || 'sqft',
+            installationVal: Number(comms.installation?.val || 0),
+            structureUnit: comms.structure?.unit || 'sqft',
+            structureVal: Number(comms.structure?.val || 0),
+        },
+        pricingMode: mode,
+        targetSellPrice: Number(targetSellPrice || 0),
         terms: terms || { price: 'Ex-works Mumbai', deliveryWeeks: 10, payment: [] },
 
         // Matrix for UI

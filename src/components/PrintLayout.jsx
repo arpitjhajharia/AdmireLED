@@ -43,7 +43,7 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                 const {
                     finalWidth, finalHeight, totalCabinets,
                     moduleType = {}, cabinetType = {}, processor, screenQty, totalProjectSell,
-                    gridCols, gridRows, commercials
+                    gridCols, gridRows, commercials, pricingMode, targetSellPrice
                 } = config;
 
                 // Technical Calculations
@@ -75,12 +75,24 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                 const sellSpares = sellLEDBase * 0.02;
                 const sellLEDFinal = sellLEDBase - sellSpares;
 
+                const ledPanelLabel = pricingMode === 'sqft' && targetSellPrice
+                    ? `LED Panel (${formatCurrency(targetSellPrice, currency)} per sqft)`
+                    : 'LED Panel';
+
+                const installLabel = comms.installationUnit === 'sqft' && comms.installationVal
+                    ? `Installation (${formatCurrency(comms.installationVal, currency)} per sqft)`
+                    : 'Installation';
+
+                const structureLabel = comms.structureUnit === 'sqft' && comms.structureVal
+                    ? `Structure (${formatCurrency(comms.structureVal, currency)} per sqft)`
+                    : 'Structure';
+
                 const commercialRows = [
-                    { name: "LED Panel", rate: sellLEDFinal },
+                    { name: ledPanelLabel, rate: sellLEDFinal },
                     { name: "Processor", rate: sellProc },
-                    { name: "Installation", rate: sellInstall },
+                    { name: installLabel, rate: sellInstall },
                     { name: "Spares (2%)", rate: sellSpares },
-                    { name: "Structure", rate: sellStructure },
+                    { name: structureLabel, rate: sellStructure },
                 ].filter(r => r.rate > 0);
 
                 return (
@@ -100,24 +112,25 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <span className="font-semibold text-slate-500">Project:</span> <span className="col-span-2 font-bold">{projectName}</span>
                                     <span className="font-semibold text-slate-500">Screen Size:</span>
                                     <span className="col-span-2">
-                                        {screenWidthM}m x {screenHeightM}m <span className="text-slate-400">/ {(screenWidthM * 3.28084).toFixed(2)}ft x {(screenHeightM * 3.28084).toFixed(2)}ft</span>
+                                        {(screenWidthM * 3.28084).toFixed(2)}ft x {(screenHeightM * 3.28084).toFixed(2)}ft <span className="text-slate-400">/ {screenWidthM}m x {screenHeightM}m</span>
                                     </span>
+                                    <span className="font-semibold text-slate-500">Type:</span> <span className="col-span-2">{moduleType.indoor ? 'Indoor' : 'Outdoor'}</span>
                                     <span className="font-semibold text-slate-500">Quantity:</span> <span className="col-span-2">{screenQty} Nos</span>
                                 </div>
 
                                 <h3 className="font-bold text-slate-700 uppercase border-b border-slate-300 mt-4 mb-2">Module & Cabinet</h3>
                                 <div className="grid grid-cols-3 gap-y-1 text-[11px]">
-                                    <span className="font-semibold text-slate-500">Module:</span> <span className="col-span-2">{moduleType.brand} P{moduleType.pitch}</span>
-                                    <span className="font-semibold text-slate-500">Mod Size:</span> <span className="col-span-2">{moduleType.width} x {moduleType.height} mm</span>
-                                    <span className="font-semibold text-slate-500">Lamp:</span> <span className="col-span-2">{moduleType.lampMake || '-'}</span>
+                                    <span className="font-semibold text-slate-500">Module Size:</span> <span className="col-span-2">{moduleType.width} x {moduleType.height} mm</span>
                                     <span className="font-semibold text-slate-500">Cabinet:</span> <span className="col-span-2">{cabinetType.material || 'Standard'}</span>
-                                    <span className="font-semibold text-slate-500">Cab Size:</span> <span className="col-span-2">{cabinetType.width} x {cabinetType.height} mm</span>
+                                    <span className="font-semibold text-slate-500">Cabinet Size:</span> <span className="col-span-2">{cabinetType.width} x {cabinetType.height} mm</span>
+                                    <span className="font-semibold text-slate-500">Cabinet Layout:</span> <span className="col-span-2">{gridCols} x {gridRows} cabinets (WxH)</span>
                                 </div>
                             </div>
 
                             <div>
                                 <h3 className="font-bold text-slate-700 uppercase border-b border-slate-300 mb-2">Screen Specifications</h3>
                                 <div className="grid grid-cols-3 gap-y-1 text-[11px]">
+                                    <span className="font-semibold text-slate-500">Pitch:</span> <span className="col-span-2">P{pitch}</span>
                                     <span className="font-semibold text-slate-500">Resolution:</span> <span className="col-span-2">{resW} x {resH} pixels</span>
                                     <span className="font-semibold text-slate-500">Total Area:</span> <span className="col-span-2">{areaSqft.toFixed(2)} Sq.ft / {areaSqm.toFixed(2)} Sq.m</span>
                                     <span className="font-semibold text-slate-500">Total Weight:</span> <span className="col-span-2">{totalWeight.toFixed(1)} kg</span>
@@ -125,6 +138,7 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <span className="font-semibold text-slate-500">Max Power:</span> <span className="col-span-2">{(maxPower).toFixed(0)} Watts</span>
                                     <span className="font-semibold text-slate-500">Brightness:</span> <span className="col-span-2">{moduleType.brightness} nits</span>
                                     <span className="font-semibold text-slate-500">Refresh Rate:</span> <span className="col-span-2">{moduleType.refreshRate} Hz</span>
+                                    <span className="font-semibold text-slate-500">Contrast:</span> <span className="col-span-2">{moduleType.contrast || '-'}</span>
                                     <span className="font-semibold text-slate-500">Controller:</span> <span className="col-span-2">{processor ? `${processor.brand} ${processor.model}` : 'Standard'}</span>
                                     <span className="font-semibold text-slate-500">Viewing:</span> <span className="col-span-2">H: {moduleType.viewAngleH}° / V: {moduleType.viewAngleV}°</span>
                                     <span className="font-semibold text-slate-500">IP Rating:</span> <span className="col-span-2">Front: IP{moduleType.ipFront} / Back: IP{moduleType.ipBack}</span>
@@ -148,6 +162,12 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <tr className="bg-slate-50">
+                                        <td className="p-2 border border-slate-300 text-center">—</td>
+                                        <td className="p-2 border border-slate-300 font-bold">Total Sq.ft</td>
+                                        <td className="p-2 border border-slate-300 text-right">{areaSqft.toFixed(2)} Sq.ft</td>
+                                        <td className="p-2 border border-slate-300 text-right font-bold">{(areaSqft * screenQty).toFixed(2)} Sq.ft</td>
+                                    </tr>
                                     {commercialRows.map((row, i) => (
                                         <tr key={i}>
                                             <td className="p-2 border border-slate-300 text-center">{i + 1}</td>
