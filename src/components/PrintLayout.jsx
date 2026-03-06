@@ -87,12 +87,29 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                     ? `Structure (${formatCurrency(comms.structureVal, currency)} per sqft)`
                     : 'Structure';
 
+                // Rate labels — only show when rate is NOT per-screen (sqft/sqm only)
+                const ledRateLabel = (() => {
+                    if (pricingMode === 'sqft') return `${formatCurrency(targetSellPrice, currency)}/sqft`;
+                    if (pricingMode === 'sqm') return `${formatCurrency(targetSellPrice, currency)}/sqm`;
+                    return ''; // screen or margin mode — already shown in Amount (1 Screen)
+                })();
+
+                const procRateLabel = ''; // always per unit/screen — Amount (1 Screen) shows it
+
+                const installRateLabel = comms.installationVal && comms.installationUnit === 'sqft'
+                    ? `${formatCurrency(comms.installationVal, currency)}/sqft`
+                    : ''; // per screen — blank
+
+                const structureRateLabel = comms.structureVal && comms.structureUnit === 'sqft'
+                    ? `${formatCurrency(comms.structureVal, currency)}/sqft`
+                    : ''; // per screen — blank
+
                 const commercialRows = [
-                    { name: ledPanelLabel, rate: sellLEDFinal },
-                    { name: "Processor", rate: sellProc },
-                    { name: installLabel, rate: sellInstall },
-                    { name: "Spares (2%)", rate: sellSpares },
-                    { name: structureLabel, rate: sellStructure },
+                    { name: ledPanelLabel, rateLabel: ledRateLabel, rate: sellLEDFinal },
+                    { name: "Processor", rateLabel: procRateLabel, rate: sellProc },
+                    { name: installLabel, rateLabel: installRateLabel, rate: sellInstall },
+                    { name: "Spares (2%)", rateLabel: '2% of LED Panel', rate: sellSpares },
+                    { name: structureLabel, rateLabel: structureRateLabel, rate: sellStructure },
                 ].filter(r => r.rate > 0);
 
                 return (
@@ -157,6 +174,7 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <tr>
                                         <th className="p-2 border border-slate-600 text-left w-12">#</th>
                                         <th className="p-2 border border-slate-600 text-left">Item Description</th>
+                                        <th className="p-2 border border-slate-600 text-right w-28">Rate</th>
                                         <th className="p-2 border border-slate-600 text-right w-32">Amount (1 Screen)</th>
                                         <th className="p-2 border border-slate-600 text-right w-32">Amount ({screenQty} Screens)</th>
                                     </tr>
@@ -165,6 +183,7 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <tr className="bg-slate-50">
                                         <td className="p-2 border border-slate-300 text-center">—</td>
                                         <td className="p-2 border border-slate-300 font-bold">Total Sq.ft</td>
+                                        <td className="p-2 border border-slate-300 text-right text-slate-400">—</td>
                                         <td className="p-2 border border-slate-300 text-right">{areaSqft.toFixed(2)} Sq.ft</td>
                                         <td className="p-2 border border-slate-300 text-right font-bold">{(areaSqft * screenQty).toFixed(2)} Sq.ft</td>
                                     </tr>
@@ -172,12 +191,13 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                         <tr key={i}>
                                             <td className="p-2 border border-slate-300 text-center">{i + 1}</td>
                                             <td className="p-2 border border-slate-300 font-bold">{row.name}</td>
+                                            <td className="p-2 border border-slate-300 text-right text-slate-500">{row.rateLabel}</td>
                                             <td className="p-2 border border-slate-300 text-right">{formatCurrency(row.rate, currency)}</td>
                                             <td className="p-2 border border-slate-300 text-right font-bold">{formatCurrency(row.rate * screenQty, currency)}</td>
                                         </tr>
                                     ))}
                                     <tr className="bg-slate-100">
-                                        <td colSpan="3" className="p-2 border border-slate-300 text-right font-bold uppercase">Subtotal (Excl. GST)</td>
+                                        <td colSpan="4" className="p-2 border border-slate-300 text-right font-bold uppercase">Subtotal (Excl. GST)</td>
                                         <td className="p-2 border border-slate-300 text-right font-bold text-sm">{formatCurrency(totalProjectSell, currency)}</td>
                                     </tr>
                                 </tbody>

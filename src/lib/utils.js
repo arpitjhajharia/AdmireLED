@@ -327,6 +327,8 @@ export const calculateBOM = (state, inventory, transactions, exchangeRate) => {
             installationVal: Number(comms.installation?.val || 0),
             structureUnit: comms.structure?.unit || 'sqft',
             structureVal: Number(comms.structure?.val || 0),
+            processorUnit: comms.processor?.unit || 'unit',
+            processorVal: Number(comms.processor?.val || 0),
         },
         pricingMode: mode,
         targetSellPrice: Number(targetSellPrice || 0),
