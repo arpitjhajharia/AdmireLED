@@ -232,7 +232,9 @@ const InventoryLedger = ({ user, userRole, inventory = [], transactions = [], re
                                         <span className={`px-1.5 py-px rounded text-[10px] font-bold uppercase ${tx.type === 'in' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {tx.type === 'in' ? 'IN' : 'OUT'}
                                         </span>
-                                        <span className="text-[11px] text-slate-400 font-medium">{new Date(tx.date).toLocaleDateString()}</span>
+                                        <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
+                                            {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
+                                        </span>
                                     </div>
                                     <div className="font-bold text-slate-800 dark:text-white text-sm truncate">
                                         {item.brand} {item.model}
@@ -285,7 +287,7 @@ const InventoryLedger = ({ user, userRole, inventory = [], transactions = [], re
                                             {/* Date */}
                                             <td className="px-3 py-1 whitespace-nowrap">
                                                 <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-                                                    {new Date(tx.date).toLocaleDateString()}
+                                                    {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
                                                 </span>
                                             </td>
 
@@ -312,7 +314,7 @@ const InventoryLedger = ({ user, userRole, inventory = [], transactions = [], re
 
                                             {/* Specs */}
                                             <td className="px-3 py-1 max-w-[100px] whitespace-nowrap">
-                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate block">
+                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate block">
                                                     {item.type?.replace('_', ' ') || '-'}
                                                 </span>
                                             </td>
