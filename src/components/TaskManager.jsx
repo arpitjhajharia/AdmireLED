@@ -20,6 +20,7 @@ import {
 const TaskManager = ({ user, userRole }) => {
     const [tasks, setTasks] = useState([]);
     const [usersList, setUsersList] = useState([]);
+    const [projectsList, setProjectsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [hideCompleted, setHideCompleted] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: 'dueDate', direction: 'asc' });
@@ -53,6 +54,7 @@ const TaskManager = ({ user, userRole }) => {
 
         const tasksRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('tasks');
         const usersRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_roles');
+        const projectsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('projects');
 
         const unsubTasks = tasksRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
             const tasksData = snapshot.docs.map(doc => ({
@@ -76,9 +78,20 @@ const TaskManager = ({ user, userRole }) => {
             console.error("Error fetching users:", error);
         });
 
+        const unsubProjects = projectsRef.onSnapshot((snapshot) => {
+            const projectsData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            setProjectsList(projectsData);
+        }, (error) => {
+            console.error("Error fetching projects:", error);
+        });
+
         return () => {
             unsubTasks();
             unsubUsers();
+            unsubProjects();
         };
     }, [user]);
 
@@ -285,13 +298,14 @@ const TaskManager = ({ user, userRole }) => {
                     )}
                 </td>
                 <td className="px-1.5 py-1 w-16 align-top">
-                    <input
-                        type="text"
+                    <select
                         value={project}
                         onChange={(e) => setProject(e.target.value)}
-                        className="w-full min-w-[50px] bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-900 dark:text-white"
-                        placeholder="Project"
-                    />
+                        className="w-full min-w-[50px] bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded px-1 py-1 text-[11px] uppercase focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-900 dark:text-white"
+                    >
+                        <option value="">-</option>
+                        {projectsList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
                 </td>
                 <td className="px-1.5 py-1 w-1/3 min-w-[120px] align-top">
                     <textarea
@@ -352,15 +366,10 @@ const TaskManager = ({ user, userRole }) => {
                         <option value="high">High</option>
                     </select>
                 </td>
-                <td className="px-1.5 py-1 w-14 align-top">
-                    <select
-                        value={assignedBy}
-                        onChange={(e) => setAssignedBy(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded px-1 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-900 dark:text-white"
-                    >
-                        <option value="">By</option>
-                        {usersList.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}
-                    </select>
+                <td className="px-1.5 py-1 text-left w-14 align-top break-words">
+                    <span className="text-[11px] text-slate-500/80 dark:text-slate-400/80 block break-words capitalize mt-[5px] cursor-not-allowed select-none" title={assignedBy}>
+                        {assignedBy || '-'}
+                    </span>
                 </td>
                 <td className="px-1.5 py-1 w-14 align-top">
                     <input
@@ -370,13 +379,10 @@ const TaskManager = ({ user, userRole }) => {
                         className="w-full bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded px-1 text-center py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-900 dark:text-white"
                     />
                 </td>
-                <td className="px-1.5 py-1 w-14 align-top">
-                    <input
-                        type="date"
-                        value={assignedOn}
-                        onChange={(e) => setAssignedOn(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-teal-300 dark:border-teal-700 rounded px-1 text-center py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal-500 text-slate-900 dark:text-white"
-                    />
+                <td className="px-1.5 py-1 whitespace-nowrap text-left w-14 align-top">
+                    <span className="text-[11px] text-slate-500/80 dark:text-slate-400/80 block tabular-nums mt-[5px] cursor-not-allowed select-none">
+                        {formatDate(assignedOn)}
+                    </span>
                 </td>
                 <td className="px-1.5 py-1 w-12 text-right align-top">
                     <div className="flex items-center justify-end gap-1 mt-0.5">

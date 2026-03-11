@@ -1,7 +1,7 @@
 import React from 'react';
-import { Calculator, ListTodo, Users, BarChart } from 'lucide-react';
+import { Calculator, ListTodo, Users, BarChart, Shield } from 'lucide-react';
 
-const Home = ({ onSelectModule, darkMode }) => {
+const Home = ({ onSelectModule, darkMode, showAdmin }) => {
     const modules = [
         {
             id: 'led',
@@ -44,6 +44,19 @@ const Home = ({ onSelectModule, darkMode }) => {
             active: false
         }
     ];
+
+    if (showAdmin) {
+        modules.push({
+            id: 'admin',
+            name: 'Admin Control',
+            description: 'Manage users, roles and database backups',
+            icon: Shield,
+            color: 'text-rose-500',
+            bgColor: 'bg-rose-50 dark:bg-rose-900/20',
+            borderColor: 'border-rose-200 dark:border-rose-800',
+            active: true
+        });
+    }
 
     return (
         <div className="max-w-6xl mx-auto p-6 animate-in fade-in duration-500">

@@ -10,7 +10,9 @@ import InventoryLedger from './components/InventoryLedger';
 import SavedQuotesManager from './components/SavedQuotesManager';
 import QuoteCalculator from './components/QuoteCalculator';
 import UserManager from './components/UserManager';
+import ProjectManager from './components/ProjectManager';
 import BackupManager from './components/BackupManager';
+import GlobalSettings from './components/GlobalSettings';
 import Login from './components/Login';
 import Home from './components/Home';
 import TaskManager from './components/TaskManager';
@@ -113,7 +115,19 @@ const App = () => {
   // 3. Dark Mode
   useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
-  // 4. LABOUR REDIRECT: If Labour tries to view Calculator, push them to Saved Quotes
+  // 4. Global Settings (Exchange Rate)
+  useEffect(() => {
+    if (!db) return;
+    const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global')
+      .onSnapshot(doc => {
+        if (doc.exists && doc.data().exchangeRate) {
+          setExchangeRate(doc.data().exchangeRate);
+        }
+      });
+    return () => unsub();
+  }, [user]);
+
+  // 5. LABOUR REDIRECT: If Labour tries to view Calculator, push them to Saved Quotes
   useEffect(() => {
     if (userRole === 'labour' && view === 'quote') {
       setView('saved');
@@ -236,6 +250,11 @@ const App = () => {
                 Tasks
               </span>
             )}
+            {activeModule === 'admin' && (
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400">
+                Admin
+              </span>
+            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -249,26 +268,13 @@ const App = () => {
               <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
               <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
-
-              {showUsersTab && <button onClick={() => setView('admin')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'admin' ? 'bg-white dark:bg-slate-600 shadow-sm text-purple-600 dark:text-purple-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Admin</button>}
             </nav>
           )}
 
           {/* User Controls */}
           <div className="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
 
-            {/* Global Exchange Rate Input (Hidden for Labour) */}
-            {safeRole !== 'labour' && (
-              <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 mr-2">
-                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">USD:</span>
-                <input
-                  type="number"
-                  value={exchangeRate}
-                  onChange={e => setExchangeRate(Number(e.target.value))}
-                  className="w-12 text-xs font-bold text-teal-600 dark:text-teal-400 bg-transparent outline-none text-right"
-                />
-              </div>
-            )}
+            {/* Global Exchange Rate (Moved to Admin Tab) */}
 
             <div className="text-right mr-2 hidden lg:block">
               <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">{safeRole.replace('_', ' ')}</div>
@@ -316,27 +322,10 @@ const App = () => {
                 <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
                   <FileText size={18} /> Quotes
                 </button>
-
-                {showUsersTab && (
-                  <button onClick={() => { setView('admin'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'admin' ? 'bg-purple-50 text-purple-700 dark:bg-slate-700 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                    <Shield size={18} /> Admin
-                  </button>
-                )}
               </>
             )}
 
-            {/* Mobile Exchange Rate Input */}
-            {safeRole !== 'labour' && (
-              <div className="p-3 rounded-lg text-sm font-bold flex items-center justify-between text-slate-600 dark:text-slate-400">
-                <div className="flex items-center gap-3"><DollarSign size={18} /> USD Rate</div>
-                <input
-                  type="number"
-                  value={exchangeRate}
-                  onChange={e => setExchangeRate(Number(e.target.value))}
-                  className="w-20 p-1 text-right border rounded bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white"
-                />
-              </div>
-            )}
+            {/* Mobile Exchange Rate Input (Moved to Admin Tab) */}
 
             <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">
               <button onClick={handleLogout} className="w-full p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
@@ -355,6 +344,7 @@ const App = () => {
               if (mod === 'led') setView('quote');
             }}
             darkMode={darkMode}
+            showAdmin={showUsersTab}
           />
         )}
 
@@ -392,13 +382,6 @@ const App = () => {
               />
             )}
 
-            {view === 'admin' && showUsersTab && (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <UserManager user={user} />
-                <BackupManager />
-              </div>
-            )}
-
             {view === 'quote' && (
               <QuoteCalculator
                 user={user}
@@ -418,6 +401,15 @@ const App = () => {
 
         {activeModule === 'tasks' && (
           <TaskManager user={user} userRole={userRole} />
+        )}
+
+        {activeModule === 'admin' && showUsersTab && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <GlobalSettings />
+            <UserManager user={user} />
+            <ProjectManager user={user} />
+            <BackupManager />
+          </div>
         )}
       </main>
     </div>
