@@ -26,6 +26,50 @@ export const formatCurrency = (amount, currency = 'INR', compact = false, dynami
     }).format(amount);
 };
 
+export const formatComponentSpecs = (item) => {
+    const specs = [];
+    if (!item) return [];
+
+    if (item.type === 'module' || item.type === 'ready') {
+        if (item.pitch) specs.push(`P${item.pitch}`);
+        specs.push(item.indoor === 'true' || item.indoor === true ? 'Indoor' : 'Outdoor');
+        if (item.ledType) specs.push(item.ledType);
+        if (item.lampMake) specs.push(item.lampMake);
+        if (item.width && item.height) specs.push(`${item.width}×${item.height}mm`);
+        if (item.brightness) specs.push(`${item.brightness} nits`);
+        if (item.refreshRate) specs.push(`${item.refreshRate} Hz`);
+        if (item.avgPower) specs.push(`Avg: ${item.avgPower}W`);
+        if (item.maxPower) specs.push(`Max: ${item.maxPower}W`);
+        if (item.contrast) specs.push(`Contrast: ${item.contrast}`);
+        if (item.viewAngleH && item.viewAngleV) specs.push(`VA: ${item.viewAngleH}°/${item.viewAngleV}°`);
+        if (item.ipFront || item.ipBack) specs.push(`IP: ${item.ipFront}/${item.ipBack}`);
+        if (item.weight) specs.push(`${item.weight}kg`);
+    } else if (item.type === 'cabinet') {
+        if (item.material) specs.push(item.material);
+        specs.push(item.indoor === 'true' || item.indoor === true ? 'Indoor' : 'Outdoor');
+        if (item.width && item.height) specs.push(`${item.width}×${item.height}mm`);
+        if (item.weight) specs.push(`${item.weight}kg`);
+    } else if (item.type === 'smps') {
+        if (item.amps) specs.push(`${item.amps}A`);
+        if (item.voltage) specs.push(`${item.voltage}V`);
+    } else if (item.type === 'card' || item.type === 'processor') {
+        if (item.ports) specs.push(`${item.ports} ports/capacity`);
+    } else if (['frc_cable', 'power_cable'].includes(item.type)) {
+        if (item.ports) specs.push(`${item.ports} pins`);
+        if (item.length) specs.push(`${item.length}mm`);
+    } else if (['screw', 'bolt'].includes(item.type)) {
+        if (item.material) specs.push(item.material);
+        if (item.size) specs.push(item.size);
+        if (item.length) specs.push(`${item.length}mm`);
+    } else if (item.type === 'gasket') {
+        if (item.width) specs.push(`W: ${item.width}mm`);
+        if (item.length) specs.push(`L: ${item.length}mm`);
+    } else if (item.type === 'tool') {
+        if (item.material) specs.push(item.material);
+    }
+    return specs;
+};
+
 export const generateId = () => Math.random().toString(36).substr(2, 9).toUpperCase();
 
 // Helper: Shared Calculation Logic

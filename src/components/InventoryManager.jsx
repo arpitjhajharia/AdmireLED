@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Edit, Plus, Trash2, X, Layers, Search, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, formatComponentSpecs } from '../lib/utils';
 
 const InventoryManager = ({ user, userRole, transactions = [], readOnly = false, exchangeRate = 1 }) => {
     const [items, setItems] = React.useState([]);
@@ -446,42 +446,72 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
 
             {/* ── Inventory Table ── */}
             <div>
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-2">
+                {/* Mobile: compact list rows */}
+                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     {filteredItems.map(item => {
                         const stock = transactions.filter(t => t.itemId === item.id).reduce((acc, t) => acc + (t.type === 'in' ? Number(t.qty) : -Number(t.qty)), 0);
+                        const landedCost = (item.price || 0) + (item.carriage || 0);
                         const isCore = ['module', 'cabinet', 'card', 'smps', 'processor'].includes(item.type);
+                        const specs = formatComponentSpecs(item);
 
                         return (
-                            <div key={item.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
-                                <div className={`absolute top-0 right-0 px-2.5 py-0.5 rounded-bl-lg text-[10px] font-bold uppercase tracking-wider ${isCore ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{item.type.replace('_', ' ')}</div>
-                                <div className="pr-16 mb-2"><h3 className="font-bold text-slate-800 dark:text-white text-base">{item.brand} {item.model}</h3>{item.vendor && <div className="text-xs text-teal-600 font-medium">{item.vendor}</div>}</div>
-                                <div className="grid grid-cols-2 gap-3 mb-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 p-2.5 rounded-lg">
-                                    <div>
-                                        <span className="block text-[10px] uppercase font-bold text-slate-400">Specs</span>
-                                        {item.type === 'module' ? <span>P{item.pitch} {item.indoor ? 'In' : 'Out'}</span> :
-                                            ['frc_cable', 'power_cable'].includes(item.type) ? <span>{item.ports} pins • {item.length}mm</span> :
-                                                ['screw', 'bolt'].includes(item.type) ? <span>{item.material} • {item.size} • {item.length}mm</span> :
-                                                    <span>{item.width ? `${item.width}x${item.height || item.length}` : 'Standard'}</span>}
-                                    </div>
-                                    <div><span className="block text-[10px] uppercase font-bold text-slate-400">Stock</span><span className={`font-bold text-sm ${stock < 0 ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>{stock}</span></div>
+                            <div key={item.id} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-700/60 transition-colors">
 
+                                {/* Left: type chip + name + specs */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                        <span className={`flex-shrink-0 text-[8px] font-bold uppercase px-1 py-px rounded tracking-wide ${isCore ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200/60' : 'bg-purple-50 text-purple-600 ring-1 ring-purple-200/60'}`}>
+                                            {item.type.replace('_', ' ')}
+                                        </span>
+                                        <span className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">
+                                            {item.brand} {item.model}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[9px] text-slate-400">
+                                        {specs.map((spec, i) => (
+                                            <React.Fragment key={i}>
+                                                <span>{spec}</span>
+                                                {i < specs.length - 1 && <span className="opacity-30">·</span>}
+                                            </React.Fragment>
+                                        ))}
+                                        {item.vendor && (
+                                            <>
+                                                <span className="opacity-30">|</span>
+                                                <span className="text-teal-500 truncate">{item.vendor}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Centre: stock + cost */}
+                                <div className="flex-shrink-0 text-right">
+                                    <div className={`text-sm font-bold tabular-nums leading-tight ${stock < 0 ? 'text-red-500' : stock === 0 ? 'text-slate-300' : 'text-slate-700 dark:text-slate-200'}`}>
+                                        {stock}
+                                    </div>
                                     {!readOnly && (
-                                        <div className="border-t border-slate-200 dark:border-slate-600 pt-1.5 mt-0.5 col-span-2">
-                                            <span className="block text-[10px] uppercase font-bold text-slate-400">Landed Cost</span>
-                                            <span className="font-bold text-slate-700 dark:text-slate-200">{formatCurrency((item.price || 0) + (item.carriage || 0), item.currency || 'INR', false, true)}</span>
-                                        </div>
-                                    )}
-                                    {!readOnly && (
-                                        <div className="col-span-2 border-t border-slate-200 dark:border-slate-600 pt-1.5 mt-0.5 text-right">
-                                            <span className="block text-[10px] uppercase font-bold text-slate-400">Stock Value (₹)</span>
-                                            <span className="font-bold text-teal-600 dark:text-teal-400">{formatCurrency(item.currency === 'USD' ? ((item.price || 0) + (item.carriage || 0)) * stock * exchangeRate : ((item.price || 0) + (item.carriage || 0)) * stock, 'INR', false, true)}</span>
+                                        <div className="text-[9px] text-slate-400 tabular-nums">
+                                            {formatCurrency(landedCost, item.currency || 'INR', false, true)}
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex gap-1.5">
-                                    {item.type === 'module' && <button onClick={() => openBatchModal(item)} className="flex-1 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold flex justify-center items-center gap-1.5 hover:bg-purple-100 transition-colors"><Layers size={13} /> Batches</button>}
-                                    {!readOnly && <><button onClick={() => handleEdit(item)} className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold flex justify-center items-center gap-1.5 hover:bg-slate-200 transition-colors"><Edit size={13} /> Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold flex justify-center items-center gap-1.5 hover:bg-red-100 transition-colors"><Trash2 size={13} /> Delete</button></>}
+
+                                {/* Right: icon-only actions */}
+                                <div className="flex-shrink-0 flex items-center gap-0.5">
+                                    {item.type === 'module' && (
+                                        <button onClick={() => openBatchModal(item)} className="w-7 h-7 flex items-center justify-center rounded-full text-purple-400 active:bg-purple-50" title="Batches">
+                                            <Layers size={13} />
+                                        </button>
+                                    )}
+                                    {!readOnly && (
+                                        <>
+                                            <button onClick={() => handleEdit(item)} className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 active:bg-blue-50 active:text-blue-600" title="Edit">
+                                                <Edit size={13} />
+                                            </button>
+                                            <button onClick={() => handleDelete(item.id)} className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 active:bg-red-50 active:text-red-500" title="Delete">
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -507,6 +537,7 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
                                 const stock = transactions.filter(t => t.itemId === item.id).reduce((acc, t) => acc + (t.type === 'in' ? Number(t.qty) : -Number(t.qty)), 0);
                                 const landedCost = (item.price || 0) + (item.carriage || 0);
                                 const isCore = ['module', 'cabinet', 'card', 'smps', 'processor'].includes(item.type);
+                                const specs = formatComponentSpecs(item);
 
                                 return (
                                     <tr key={item.id} className={`group transition-colors duration-100 ${rowIdx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/60 dark:bg-slate-800/50'} hover:bg-blue-50/50 dark:hover:bg-slate-700/60 ${editingId === item.id ? 'bg-amber-50/60 dark:bg-amber-900/20' : ''}`}>
@@ -527,13 +558,15 @@ const InventoryManager = ({ user, userRole, transactions = [], readOnly = false,
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-1 max-w-[150px] whitespace-nowrap">
-                                            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                                                {item.type === 'module' ? `P${item.pitch} ${item.width}x${item.height}` :
-                                                    ['frc_cable', 'power_cable'].includes(item.type) ? `${item.ports} pins, ${item.length}mm` :
-                                                        ['screw', 'bolt'].includes(item.type) ? `${item.material} ${item.size} x ${item.length}mm` :
-                                                            item.width ? `${item.width}x${item.height || item.length}` : '-'}
-                                            </span>
+                                        <td className="px-3 py-1 max-w-[250px]">
+                                            <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 max-h-[40px] overflow-y-auto scrollbar-hide">
+                                                {specs.map((spec, i) => (
+                                                    <span key={i} className="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap bg-slate-100 dark:bg-slate-700/50 px-1 py-px rounded border border-slate-200 dark:border-slate-600/50">
+                                                        {spec}
+                                                    </span>
+                                                ))}
+                                                {specs.length === 0 && <span className="text-[10px] text-slate-300">-</span>}
+                                            </div>
                                         </td>
                                         <td className={`px-3 py-1 whitespace-nowrap text-center ${stock < 0 ? 'text-red-500' : stock === 0 ? 'text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
                                             <span className="text-[13px] font-extrabold tabular-nums tracking-tight">

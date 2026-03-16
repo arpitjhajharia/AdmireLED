@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calculator, Settings, Printer, Plus, Trash2, Monitor, DollarSign, Box, Wrench, Percent, Edit, Copy, Save, FileText, Eye, RefreshCw, X } from 'lucide-react';
-import { formatCurrency, generateId, calculateBOM } from '../lib/utils';
+import { formatCurrency, generateId, calculateBOM, formatComponentSpecs } from '../lib/utils';
 import { CONFIG } from '../lib/config';
 import ScreenVisualizer from './ScreenVisualizer';
 import BOMLayout from './BOMLayout';
@@ -39,62 +39,91 @@ const InteractiveCostSheet = ({ calculation, state, updateState, updateExtra, up
     // Component Cell Helper
     const renderComponentCell = (item) => {
         const updateScreenState = (key, value) => updateScreenProp(state.activeScreenIndex, key, value);
+        const selectedItem = inventory.find(i => i.id === (
+            item.id === 'modules' ? selectedModuleId :
+            item.id === 'cabinets' ? selectedCabinetId :
+            item.id === 'cards' ? selectedCardId :
+            item.id === 'smps' ? selectedSMPSId :
+            item.id === 'processor' ? selectedProcId :
+            item.id === 'ready' ? activeScreen.readyId :
+            (extraComponents ? extraComponents.find(e => e.id === item.id)?.componentId : '')
+        ));
+
+        const specDisplay = selectedItem ? (
+            <div className="mt-1 flex flex-wrap gap-x-1 gap-y-0.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                {formatComponentSpecs(selectedItem).map((spec, i, arr) => (
+                    <span key={i} className="flex items-center gap-1">
+                        {spec}
+                        {i < arr.length - 1 && <span className="text-slate-300">·</span>}
+                    </span>
+                ))}
+            </div>
+        ) : null;
 
         if (item.id === 'modules') {
             return (
-                <div className="flex flex-col md:flex-row gap-2">
-                    <select value={selectedPitch} onChange={e => { updateScreenState('selectedPitch', e.target.value); updateScreenState('selectedModuleId', ''); }} className="w-full md:w-20 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                        <option value="">Pitch</option>{uniquePitches.map(p => <option key={p} value={p}>P{p}</option>)}
-                    </select>
-                    <select value={selectedModuleId} onChange={e => updateScreenState('selectedModuleId', e.target.value)} disabled={!selectedPitch} className="w-full md:flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50">
-                        <option value="">Select Module...</option>
-                        {filteredModules.map(m => <option key={m.id} value={m.id}>{m.brand} {m.model} ({getStock(m.id)})</option>)}
-                    </select>
+                <div className="flex flex-col gap-1">
+                    <div className="flex flex-col md:flex-row gap-2">
+                        <select value={selectedPitch} onChange={e => { updateScreenState('selectedPitch', e.target.value); updateScreenState('selectedModuleId', ''); }} className="w-full md:w-20 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                            <option value="">Pitch</option>{uniquePitches.map(p => <option key={p} value={p}>P{p}</option>)}
+                        </select>
+                        <select value={selectedModuleId} onChange={e => updateScreenState('selectedModuleId', e.target.value)} disabled={!selectedPitch} className="w-full md:flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50">
+                            <option value="">Select Module...</option>
+                            {filteredModules.map(m => <option key={m.id} value={m.id}>{m.brand} {m.model} ({getStock(m.id)})</option>)}
+                        </select>
+                    </div>
+                    {specDisplay}
                 </div>
             );
         }
-        if (item.id === 'cabinets') return <select value={selectedCabinetId} onChange={e => updateScreenState('selectedCabinetId', e.target.value)} disabled={!selectedModule} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50"><option value="">Select Cabinet...</option>{cabinets.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({c.width}x{c.height}) - Stock: {getStock(c.id)}</option>)}</select>;
-        if (item.id === 'cards') return <select value={selectedCardId} onChange={e => updateScreenState('selectedCardId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Card...</option>{inventory.filter(i => i.type === 'card').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
-        if (item.id === 'smps') return <select value={selectedSMPSId} onChange={e => updateScreenState('selectedSMPSId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'smps').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>;
+        if (item.id === 'cabinets') return <div className="flex flex-col gap-1"><select value={selectedCabinetId} onChange={e => updateScreenState('selectedCabinetId', e.target.value)} disabled={!selectedModule} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:opacity-50"><option value="">Select Cabinet...</option>{cabinets.map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({c.width}x{c.height}) - Stock: {getStock(c.id)}</option>)}</select>{specDisplay}</div>;
+        if (item.id === 'cards') return <div className="flex flex-col gap-1"><select value={selectedCardId} onChange={e => updateScreenState('selectedCardId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Card...</option>{inventory.filter(i => i.type === 'card').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>{specDisplay}</div>;
+        if (item.id === 'smps') return <div className="flex flex-col gap-1"><select value={selectedSMPSId} onChange={e => updateScreenState('selectedSMPSId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select SMPS...</option>{inventory.filter(i => i.type === 'smps').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}</select>{specDisplay}</div>;
         if (item.id === 'processor') {
             return (
-                <div className="flex flex-col gap-2 md:gap-1">
-                    <select value={selectedProcId} onChange={e => updateScreenState('selectedProcId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                        <option value="">Select Processor...</option>
-                        {inventory.filter(i => i.type === 'processor').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}
-                    </select>
-                    {/* HIDE PROCESSOR SELL PRICE FOR SUPERVISOR */}
-                    {!isSupervisor && (
-                        <div className="flex items-center gap-2 md:gap-1">
-                            <span className="text-xs md:text-[10px] text-green-600 font-bold">Sell:</span>
-                            <input type="number" className="flex-1 md:w-20 p-2 md:p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials.processor?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, processor: { ...commercials.processor, val: e.target.value } })} />
-                        </div>
-                    )}
+                <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2 md:gap-1">
+                        <select value={selectedProcId} onChange={e => updateScreenState('selectedProcId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                            <option value="">Select Processor...</option>
+                            {inventory.filter(i => i.type === 'processor').map(c => <option key={c.id} value={c.id}>{c.brand} {c.model} ({getStock(c.id)})</option>)}
+                        </select>
+                        {/* HIDE PROCESSOR SELL PRICE FOR SUPERVISOR */}
+                        {!isSupervisor && (
+                            <div className="flex items-center gap-2 md:gap-1">
+                                <span className="text-xs md:text-[10px] text-green-600 font-bold">Sell:</span>
+                                <input type="number" className="flex-1 md:w-20 p-2 md:p-0.5 text-xs border border-green-200 rounded bg-green-50 text-green-800" value={commercials.processor?.val || 0} onChange={e => updateScreenProp(state.activeScreenIndex, 'commercials', { ...commercials, processor: { ...commercials.processor, val: e.target.value } })} />
+                            </div>
+                        )}
+                    </div>
+                    {specDisplay}
                 </div>
             );
         }
-        if (item.id === 'ready') return <select value={activeScreen.readyId} onChange={e => updateScreenState('readyId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Screen Model...</option>{readyUnits.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} (P{u.pitch})</option>)}</select>;
+        if (item.id === 'ready') return <div className="flex flex-col gap-1"><select value={activeScreen.readyId} onChange={e => updateScreenState('readyId', e.target.value)} className="w-full p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="">Select Screen Model...</option>{readyUnits.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} (P{u.pitch})</option>)}</select>{specDisplay}</div>;
 
         const extraIdx = extraComponents ? extraComponents.findIndex(e => e.id === item.id) : -1;
         if (extraIdx !== -1) {
             return (
-                <div className="flex gap-1 items-center">
-                    <select value={extraComponents[extraIdx].componentId} onChange={e => { const n = [...extraComponents]; n[extraIdx].componentId = e.target.value; updateScreenState('extraComponents', n); }} className="flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                        <option value="">Select...</option>
-                        {['module', 'cabinet', 'card', 'smps'].map(type => {
-                            const items = inventory.filter(i => i.type === type).sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model));
-                            if (items.length === 0) return null;
-                            return (
-                                <optgroup key={type} label={type === 'smps' ? 'SMPS' : type.toUpperCase()}>
-                                    {items.map(i => (
-                                        <option key={i.id} value={i.id}>{i.brand} {i.model}</option>
-                                    ))}
-                                </optgroup>
-                            );
-                        })}
-                    </select>
-                    <select value={extraComponents[extraIdx].type} onChange={e => { const n = [...extraComponents]; n[extraIdx].type = e.target.value; updateScreenState('extraComponents', n); }} className="w-16 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="screen">/Scrn</option><option value="cabinet">/Cab</option></select>
-                    <button type="button" onClick={() => updateScreenState('extraComponents', extraComponents.filter((_, i) => i !== extraIdx))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                <div className="flex flex-col gap-1">
+                    <div className="flex gap-1 items-center">
+                        <select value={extraComponents[extraIdx].componentId} onChange={e => { const n = [...extraComponents]; n[extraIdx].componentId = e.target.value; updateScreenState('extraComponents', n); }} className="flex-1 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                            <option value="">Select...</option>
+                            {['module', 'cabinet', 'card', 'smps', 'processor', 'frc_cable', 'power_cable', 'screw', 'bolt', 'gasket', 'tool'].map(type => {
+                                const items = inventory.filter(i => i.type === type).sort((a, b) => (a.brand + ' ' + a.model).localeCompare(b.brand + ' ' + b.model));
+                                if (items.length === 0) return null;
+                                return (
+                                    <optgroup key={type} label={type.replace('_', ' ').toUpperCase()}>
+                                        {items.map(i => (
+                                            <option key={i.id} value={i.id}>{i.brand} {i.model}</option>
+                                        ))}
+                                    </optgroup>
+                                );
+                            })}
+                        </select>
+                        <select value={extraComponents[extraIdx].type} onChange={e => { const n = [...extraComponents]; n[extraIdx].type = e.target.value; updateScreenState('extraComponents', n); }} className="w-16 p-2 md:p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="screen">/Scrn</option><option value="cabinet">/Cab</option></select>
+                        <button type="button" onClick={() => updateScreenState('extraComponents', extraComponents.filter((_, i) => i !== extraIdx))} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                    </div>
+                    {specDisplay}
                 </div>
             );
         }
