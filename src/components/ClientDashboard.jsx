@@ -70,13 +70,13 @@ const todayStr = () => new Date().toISOString().split('T')[0];
 
 function Modal({ title, onClose, children }) {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-800 text-sm">{title}</h3>
-                    <button onClick={onClose} className="p-1 rounded hover:bg-slate-100 text-slate-400 transition-colors"><X size={14} /></button>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[95vh] overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-white flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{title}</h3>
+                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><X size={18} /></button>
                 </div>
-                <div className="p-5 space-y-3">{children}</div>
+                <div className="p-5 space-y-4 pb-10 sm:pb-5">{children}</div>
             </div>
         </div>
     );
@@ -206,11 +206,11 @@ function QuoteModal({ leadId, quote, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4">
-                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl sm:my-4 max-h-[95vh] overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-white flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
                     <h3 className="font-bold text-slate-800 text-sm">{quote?.id ? 'Edit Quote' : 'New Quote'}</h3>
-                    <button onClick={onClose} className="p-1 rounded hover:bg-slate-100 text-slate-400"><X size={14} /></button>
+                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><X size={18} /></button>
                 </div>
                 <div className="p-5 space-y-3">
                     <div className="grid grid-cols-3 gap-3">
@@ -230,20 +230,51 @@ function QuoteModal({ leadId, quote, onClose }) {
                             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Line Items</label>
                             <button onClick={addItem} className="text-[11px] text-violet-600 font-bold flex items-center gap-0.5 hover:underline"><Plus size={10} /> Add Row</button>
                         </div>
-                        <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: '1fr 56px 56px 72px 72px 20px' }}>
-                            {['Product / Description', 'Qty', 'UOM', 'Rate (₹)', 'Amount (₹)', ''].map((h, i) => (
-                                <span key={i} className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</span>
-                            ))}
+                        <div className="flex items-center gap-2 mb-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap min-w-[140px]">Product / Description</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-14 shrink-0 text-center">Qty</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-14 shrink-0 text-center">UOM</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-20 shrink-0 text-right">Rate</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-20 shrink-0 text-right">Amount</span>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-3">
                             {form.items.map((it, i) => (
-                                <div key={i} className="grid gap-1 items-center" style={{ gridTemplateColumns: '1fr 56px 56px 72px 72px 20px' }}>
-                                    <input className={inputCls} value={it.product} onChange={e => setItem(i, 'product', e.target.value)} placeholder="Product or service" />
-                                    <input type="number" className={inputCls} value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="0" />
-                                    <input className={inputCls} value={it.uom} onChange={e => setItem(i, 'uom', e.target.value)} placeholder="Nos" />
-                                    <input type="number" className={inputCls} value={it.rate} onChange={e => setItem(i, 'rate', e.target.value)} placeholder="0" />
-                                    <input type="number" className={inputCls} value={it.amount} onChange={e => setItem(i, 'amount', e.target.value)} placeholder="0" />
-                                    <button onClick={() => removeItem(i)} className="text-slate-300 hover:text-red-400 flex items-center justify-center"><X size={12} /></button>
+                                <div key={i} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 sm:flex-row sm:items-center sm:bg-transparent sm:p-0 sm:border-0 sm:gap-1.5">
+                                    <div className="flex-1 min-w-0">
+                                        <textarea 
+                                            className="w-full px-2.5 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:ring-1 focus:ring-violet-400 focus:outline-none bg-white font-medium resize-none min-h-[34px] leading-tight"
+                                            value={it.product} 
+                                            onChange={e => setItem(i, 'product', e.target.value)} 
+                                            placeholder="Product or service description"
+                                            rows={1}
+                                            onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-1">
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">Qty</span>
+                                                <input type="number" className="w-full sm:w-14 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-center" value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="0" />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">UOM</span>
+                                                <input className="w-full sm:w-14 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-center uppercase" value={it.uom} onChange={e => setItem(i, 'uom', e.target.value)} placeholder="Nos" />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-1">
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">Rate</span>
+                                                <input type="number" className="w-full sm:w-20 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-right" value={it.rate} onChange={e => setItem(i, 'rate', e.target.value)} placeholder="0" />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-violet-50 border border-violet-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-violet-400 uppercase tracking-widest min-w-[28px]">Total</span>
+                                                <input type="number" className="w-full sm:w-24 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-right font-bold text-violet-700 bg-white sm:bg-transparent" value={it.amount} readOnly placeholder="0" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => removeItem(i)} className="flex items-center justify-center gap-1.5 w-full sm:w-8 py-1.5 sm:py-0 border border-red-50 sm:border-0 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 transition-all font-bold text-[10px] uppercase sm:normal-case">
+                                        <X size={14} /> <span className="sm:hidden">Remove Item</span>
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -372,11 +403,11 @@ function POModal({ leadId, po, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4">
-                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl sm:my-4 max-h-[95vh] overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-white flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
                     <h3 className="font-bold text-slate-800 text-sm">{po?.id ? 'Edit Purchase Order' : 'New Purchase Order'}</h3>
-                    <button onClick={onClose} className="p-1 rounded hover:bg-slate-100 text-slate-400"><X size={14} /></button>
+                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><X size={18} /></button>
                 </div>
                 <div className="p-5 space-y-3">
                     <div className="grid grid-cols-3 gap-3">
@@ -392,20 +423,51 @@ function POModal({ leadId, po, onClose }) {
                             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Line Items</label>
                             <button onClick={addItem} className="text-[11px] text-violet-600 font-bold flex items-center gap-0.5 hover:underline"><Plus size={10} /> Add Row</button>
                         </div>
-                        <div className="grid gap-1 mb-1" style={{ gridTemplateColumns: '1fr 56px 56px 72px 72px 20px' }}>
-                            {['Description', 'Qty', 'UOM', 'Rate (₹)', 'Amount (₹)', ''].map((h, i) => (
-                                <span key={i} className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{h}</span>
-                            ))}
+                        <div className="flex items-center gap-2 mb-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap min-w-[140px]">Description</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-14 shrink-0 text-center">Qty</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-14 shrink-0 text-center">UOM</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-20 shrink-0 text-right">Rate</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 w-20 shrink-0 text-right">Amount</span>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-3">
                             {form.items.map((it, i) => (
-                                <div key={i} className="grid gap-1 items-center" style={{ gridTemplateColumns: '1fr 56px 56px 72px 72px 20px' }}>
-                                    <input className={inputCls} value={it.product} onChange={e => setItem(i, 'product', e.target.value)} placeholder="Product or service" />
-                                    <input type="number" className={inputCls} value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="0" />
-                                    <input className={inputCls} value={it.uom} onChange={e => setItem(i, 'uom', e.target.value)} placeholder="Nos" />
-                                    <input type="number" className={inputCls} value={it.rate} onChange={e => setItem(i, 'rate', e.target.value)} placeholder="0" />
-                                    <input type="number" className={inputCls} value={it.amount} onChange={e => setItem(i, 'amount', e.target.value)} placeholder="0" />
-                                    <button onClick={() => removeItem(i)} className="text-slate-300 hover:text-red-400 flex items-center justify-center"><X size={12} /></button>
+                                <div key={i} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 sm:flex-row sm:items-center sm:bg-transparent sm:p-0 sm:border-0 sm:gap-1.5">
+                                    <div className="flex-1 min-w-0">
+                                        <textarea 
+                                            className="w-full px-2.5 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:ring-1 focus:ring-violet-400 focus:outline-none bg-white font-medium resize-none min-h-[34px] leading-tight"
+                                            value={it.product} 
+                                            onChange={e => setItem(i, 'product', e.target.value)} 
+                                            placeholder="PO Description"
+                                            rows={1}
+                                            onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-1">
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">Qty</span>
+                                                <input type="number" className="w-full sm:w-14 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-center" value={it.qty} onChange={e => setItem(i, 'qty', e.target.value)} placeholder="0" />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">UOM</span>
+                                                <input className="w-full sm:w-14 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-center uppercase" value={it.uom} onChange={e => setItem(i, 'uom', e.target.value)} placeholder="Nos" />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-1">
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-slate-400 uppercase tracking-widest min-w-[28px]">Rate</span>
+                                                <input type="number" className="w-full sm:w-20 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-right" value={it.rate} onChange={e => setItem(i, 'rate', e.target.value)} placeholder="0" />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2 py-1.5 bg-violet-50 border border-violet-100 rounded-lg sm:bg-transparent sm:border-0 sm:p-0">
+                                                <span className="sm:hidden text-[9px] font-bold text-violet-400 uppercase tracking-widest min-w-[28px]">Total</span>
+                                                <input type="number" className="w-full sm:w-24 px-1 py-1.5 text-[11px] border border-slate-200 rounded-lg text-right font-bold text-violet-700 bg-white sm:bg-transparent" value={it.amount} readOnly placeholder="0" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => removeItem(i)} className="flex items-center justify-center gap-1.5 w-full sm:w-8 py-1.5 sm:py-0 border border-red-50 sm:border-0 rounded-lg text-red-400 hover:text-red-500 hover:bg-red-50 transition-all font-bold text-[10px] uppercase sm:normal-case">
+                                        <X size={14} /> <span className="sm:hidden">Remove Item</span>
+                                    </button>
                                 </div>
                             ))}
                         </div>
@@ -432,19 +494,23 @@ function POModal({ leadId, po, onClose }) {
                             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Payment Milestones</label>
                             <button onClick={addMs} className="text-[11px] text-violet-600 font-bold flex items-center gap-0.5 hover:underline"><Plus size={10} /> Add</button>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 overflow-x-auto pb-2 scrollbar-hide">
                             {form.milestones.map((ms, i) => (
-                                <div key={i} className="grid gap-1.5 p-2.5 bg-slate-50 rounded-lg border border-slate-100" style={{ gridTemplateColumns: '1fr 60px 72px 0.5fr 96px 20px' }}>
-                                    <input className={inputCls} value={ms.label} onChange={e => setMs(i, 'label', e.target.value)} placeholder="Label" />
-                                    <input type="number" className={inputCls} value={ms.pct} onChange={e => setMs(i, 'pct', e.target.value)} placeholder="%" />
-                                    <div className="flex items-center px-2 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold tabular-nums text-teal-600 whitespace-nowrap overflow-hidden">
-                                        ₹{fmtNum(parseFloat(((Number(ms.pct) || 0) / 100 * grandTotal).toFixed(0)))}
+                                <div key={i} className="flex flex-col sm:flex-row gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100 min-w-max sm:min-w-0">
+                                    <input className="min-w-[120px] px-2.5 py-1.5 text-[11px] border border-slate-200 rounded-lg" value={ms.label} onChange={e => setMs(i, 'label', e.target.value)} placeholder="Label" />
+                                    <div className="flex gap-1.5 items-center">
+                                        <input type="number" className="w-14 px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg text-center" value={ms.pct} onChange={e => setMs(i, 'pct', e.target.value)} placeholder="%" />
+                                        <div className="w-24 flex items-center px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-semibold tabular-nums text-teal-600 whitespace-nowrap overflow-hidden">
+                                            ₹{fmtNum(parseFloat(((Number(ms.pct) || 0) / 100 * grandTotal).toFixed(0)))}
+                                        </div>
                                     </div>
-                                    <input type="date" className={inputCls} value={ms.date} onChange={e => setMs(i, 'date', e.target.value)} />
-                                    <select className={selectCls} value={ms.status} onChange={e => setMs(i, 'status', e.target.value)}>
-                                        {MILESTONE_STATUSES.map(s => <option key={s}>{s}</option>)}
-                                    </select>
-                                    <button onClick={() => removeMs(i)} className="text-slate-300 hover:text-red-400 flex items-center justify-center"><X size={12} /></button>
+                                    <div className="flex gap-1.5 items-center">
+                                        <input type="date" className="w-28 px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg" value={ms.date} onChange={e => setMs(i, 'date', e.target.value)} />
+                                        <select className="w-24 px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg bg-white" value={ms.status} onChange={e => setMs(i, 'status', e.target.value)}>
+                                            {MILESTONE_STATUSES.map(s => <option key={s}>{s}</option>)}
+                                        </select>
+                                        <button onClick={() => removeMs(i)} className="p-1 text-slate-300 hover:text-red-400 shrink-0"><X size={14} /></button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -761,10 +827,10 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                     <span>Product</span><span className="text-center">Qty</span><span className="text-center">UOM</span><span className="text-right">Rate</span><span className="text-right">Amount</span>
                 </div>
                 {q.items.map((it, i) => (
-                    <div key={i} className="grid px-2 py-1 border-b border-slate-50 last:border-0 text-[11px]" style={{ gridTemplateColumns: '1fr 40px 40px 72px 84px' }}>
-                        <span className="text-slate-700 truncate">{it.product || '—'}</span>
+                    <div key={i} className="grid px-2 py-2 border-b border-slate-50 last:border-0 text-[11px] items-start" style={{ gridTemplateColumns: '1fr 34px 34px 64px 74px' }}>
+                        <span className="text-slate-700 font-medium leading-tight whitespace-normal break-words pr-1">{it.product || '—'}</span>
                         <span className="text-center text-slate-500 tabular-nums">{it.qty || '—'}</span>
-                        <span className="text-center text-slate-400">{it.uom || '—'}</span>
+                        <span className="text-center text-slate-400 uppercase">{it.uom || '—'}</span>
                         <span className="text-right text-slate-500 tabular-nums">₹{fmtNum(it.rate)}</span>
                         <span className="text-right font-semibold text-slate-700 tabular-nums">₹{fmtNum(it.amount)}</span>
                     </div>
@@ -850,80 +916,81 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
             {/* ══ HEADER ══ */}
             <div className="shrink-0 bg-white border-b border-slate-200">
                 {/* Row 1 */}
-                <div className="px-4 pt-2.5 pb-1.5 flex items-center justify-between gap-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                        <button onClick={onBack} className="p-1 rounded hover:bg-slate-100 text-slate-500 transition-colors shrink-0">
-                            <ArrowLeft size={14} />
+                <div className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <button onClick={onBack} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors shrink-0">
+                            <ArrowLeft size={16} />
                         </button>
                         <div className="w-px h-4 bg-slate-200 shrink-0" />
-                        <span className="text-sm font-bold text-slate-800 truncate max-w-xs">{lead.companyName || 'Client'}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                            lead.stage === 'Won' ? 'bg-teal-50 text-teal-600 border border-teal-200' :
-                            lead.stage === 'Lost' ? 'bg-red-50 text-red-400 border border-red-100' :
-                            'bg-violet-50 text-violet-600 border border-violet-200'
-                        }`}>{lead.stage}</span>
-                        {lead.location && (
-                            <span className="flex items-center gap-0.5 text-[11px] text-slate-400 ml-1">
-                                <MapPin size={11} /> {lead.location}
-                            </span>
-                        )}
+                        <div className="min-w-0 flex flex-col">
+                            <span className="text-sm font-bold text-slate-800 truncate">{lead.companyName || 'Client'}</span>
+                            <div className="flex items-center gap-2">
+                                <span className={`px-1 py-0 shadow-sm rounded text-[9px] font-bold uppercase tracking-wider ${
+                                    lead.stage === 'Won' ? 'bg-teal-50 text-teal-600' :
+                                    lead.stage === 'Lost' ? 'bg-red-50 text-red-400' :
+                                    'bg-violet-50 text-violet-600'
+                                }`}>{lead.stage}</span>
+                                {lead.location && (
+                                    <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
+                                        <MapPin size={9} /> {lead.location}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <button onClick={() => openModal('company')} className="flex items-center gap-0.5 px-2 py-1 border border-slate-200 text-slate-600 rounded text-[11px] font-semibold hover:bg-slate-50 transition-colors">
-                            <Edit2 size={11} /> Edit Company
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => openModal('company')} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-50 transition-colors">
+                            <Edit2 size={11} /> Edit
                         </button>
-                        <button onClick={() => openModal('quote')} className="flex items-center gap-0.5 px-2.5 py-1 bg-violet-600 text-white rounded text-[11px] font-bold hover:bg-violet-700 transition-colors">
+                        <button onClick={() => openModal('quote')} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 bg-violet-600 text-white rounded-lg text-[10px] font-bold hover:bg-violet-700 transition-colors shadow-sm">
                             <Plus size={11} /> New Quote
                         </button>
                     </div>
                 </div>
 
                 {/* Row 2: Stats */}
-                <div className="px-4 py-2 flex items-center gap-6">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
-                            <TrendingUp size={11} className="text-violet-500" />
+                <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-6 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                            <TrendingUp size={12} className="text-violet-500" />
                         </div>
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">Latest Quote</p>
-                            <p className="text-sm font-bold text-slate-800 tabular-nums leading-tight">{latestQuote ? fmt(latestQuote.amount) : '—'}</p>
-                        </div>
-                    </div>
-                    <div className="w-px h-7 bg-slate-100 shrink-0" />
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                            <AlertCircle size={11} className="text-amber-500" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">Payment Pending</p>
-                            <p className="text-sm font-bold text-amber-600 tabular-nums leading-tight">{fmt(paymentPending)}</p>
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight">Latest Quote</p>
+                            <p className="text-xs font-bold text-slate-800 tabular-nums break-words">{latestQuote ? fmt(latestQuote.amount) : '—'}</p>
                         </div>
                     </div>
-                    <div className="w-px h-7 bg-slate-100 shrink-0" />
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
-                            <Clock size={11} className="text-sky-500" />
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                            <AlertCircle size={12} className="text-amber-500" />
                         </div>
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">Payment Upcoming</p>
-                            <p className="text-sm font-bold text-sky-600 tabular-nums leading-tight">{fmt(paymentUpcoming)}</p>
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight truncate">Pending</p>
+                            <p className="text-xs font-bold text-amber-600 tabular-nums break-words">{fmt(paymentPending)}</p>
                         </div>
                     </div>
-                    <div className="w-px h-7 bg-slate-100 shrink-0" />
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                            <CheckSquare size={11} className="text-slate-400" />
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
+                            <Clock size={12} className="text-sky-500" />
                         </div>
-                        <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none">Open Tasks</p>
-                            <p className="text-sm font-bold text-slate-700 tabular-nums leading-tight">{tasks.filter(t => t.status !== 'done').length}</p>
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight truncate">Upcoming</p>
+                            <p className="text-xs font-bold text-sky-600 tabular-nums break-words">{fmt(paymentUpcoming)}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                            <CheckSquare size={12} className="text-slate-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight">Open Tasks</p>
+                            <p className="text-xs font-bold text-slate-700 tabular-nums">{tasks.filter(t => t.status !== 'done').length}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ══ 3-COLUMN BODY ══ */}
-            <div className="flex-1 overflow-hidden p-3 grid gap-3" style={{ gridTemplateColumns: '1fr 1.2fr 1.2fr', minHeight: 0 }}>
+            {/* ══ RESPONSIVE BODY ══ */}
+            <div className="flex-1 overflow-y-auto p-3 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr_1.2fr] gap-3 content-start">
 
                 {/* ── COL 1: TASKS ── */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
@@ -943,10 +1010,10 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                             </button>
                         </div>
                     </div>
-                    <div className="grid px-3 py-1 border-b border-slate-100 shrink-0 bg-slate-50" style={{ gridTemplateColumns: '14px 1fr 52px 40px' }}>
-                        {['', 'Task', 'Assigned', 'Due'].map((h, i) => (
-                            <span key={i} className={`text-[11px] font-bold uppercase tracking-wider text-slate-400 ${i > 1 ? 'text-center' : ''}`}>{h}</span>
-                        ))}
+                    <div className="px-3 py-1 border-b border-slate-100 shrink-0 bg-slate-50 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <span className="w-4 shrink-0" />
+                        <span className="flex-1 px-3">Task</span>
+                        <span className="w-16 text-center">Due</span>
                     </div>
                     <div className="flex-1 overflow-y-auto">
                         {visibleTasks.length === 0 ? (
@@ -959,18 +1026,19 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                             const dotColor = PRIORITY_LABELS[pKey] || 'bg-slate-300';
                             return (
                                 <div key={task.id}
-                                    className={`grid items-center px-3 py-1.5 border-b border-slate-50 last:border-0 cursor-pointer group transition-colors ${done ? 'opacity-40' : 'hover:bg-slate-50'}`}
-                                    style={{ gridTemplateColumns: '14px 1fr 52px 40px' }}
+                                    className={`flex items-center gap-2 px-3 py-2.5 border-b border-slate-50 last:border-0 cursor-pointer group transition-colors ${done ? 'opacity-40' : 'hover:bg-slate-50'}`}
                                     onClick={() => toggleTask(task)}>
-                                    <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all ${done ? 'bg-teal-500 border-teal-500' : 'border-slate-300 group-hover:border-violet-400'}`}>
-                                        {done && <CheckCircle2 size={7} className="text-white" />}
+                                    <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${done ? 'bg-teal-500 border-teal-500' : 'border-slate-300 group-hover:border-violet-400'}`}>
+                                        {done && <CheckCircle2 size={10} className="text-white" />}
                                     </div>
-                                    <div className="pl-1.5 flex items-center gap-1.5 min-w-0">
-                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-                                        <span className={`text-[11px] truncate ${done ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{task.title}</span>
+                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+                                            <span className={`text-xs truncate ${done ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{task.title}</span>
+                                        </div>
+                                        {task.assignedTo && <span className="text-[10px] text-slate-400 font-medium truncate sm:ml-auto">@{task.assignedTo}</span>}
                                     </div>
-                                    <span className="text-center text-[11px] text-slate-500 font-medium truncate px-0.5">{task.assignedTo || '—'}</span>
-                                    <span className="text-center text-[11px] text-slate-400 tabular-nums">{task.dueDate || '—'}</span>
+                                    <span className="w-16 text-center text-[10px] text-slate-400 tabular-nums shrink-0">{task.dueDate || '—'}</span>
                                 </div>
                             );
                         })}
@@ -1041,7 +1109,7 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                                                             <div className="flex items-center gap-2 px-2 py-1.5">
                                                                 <span className="text-[11px] font-mono font-bold text-slate-500 shrink-0">{q.ref || '—'}</span>
                                                                 <span className="text-[11px] text-slate-400 tabular-nums shrink-0">{fmtDateShort(q.date)}</span>
-                                                                <span className="text-[11px] text-slate-500 truncate flex-1">{q.projectName || ''}</span>
+                                                                <span className="text-[11px] text-slate-500 whitespace-normal break-words flex-1 leading-tight">{q.projectName || ''}</span>
                                                                 <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${quoteStatusStyle[q.status] || quoteStatusStyle.Sent}`}>{q.status}</span>
                                                                 {q.calculatorRef ? (
                                                                     <button
@@ -1077,10 +1145,10 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                             onClick={() => setCompanyOpen(o => !o)}
                             className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors group"
                         >
-                            <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                 <Building2 size={11} className="text-violet-400 shrink-0" />
-                                <span className="text-[11px] font-bold text-slate-700 truncate">{lead.companyName || 'Company Details'}</span>
-                                {lead.location && <span className="text-[11px] text-slate-400 shrink-0 flex items-center gap-0.5"><MapPin size={10} />{lead.location}</span>}
+                                <span className="text-[11px] font-bold text-slate-700 whitespace-normal break-words leading-tight">{lead.companyName || 'Company Details'}</span>
+                                {lead.location && <span className="text-[11px] text-slate-400 shrink-0 flex items-center gap-0.5 ml-auto"><MapPin size={10} />{lead.location}</span>}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0 ml-2">
                                 <button
@@ -1179,9 +1247,9 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                                 {/* PO header row */}
                                 <div className="flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 group">
                                     <span className="text-[11px] font-mono font-bold text-violet-500 shrink-0">{po.poNumber || '—'}</span>
-                                    {po.projectName && <span className="text-[11px] font-medium text-slate-700 flex-1 truncate">{po.projectName}</span>}
+                                    {po.projectName && <span className="text-[11px] font-medium text-slate-700 flex-1 whitespace-normal break-words leading-tight">{po.projectName}</span>}
                                     {!po.projectName && <span className="flex-1" />}
-                                    <span className="text-[11px] font-bold text-teal-600 tabular-nums shrink-0">₹{fmtNum(po.grandTotal || po.total)}</span>
+                                    <span className="text-[11px] font-bold text-teal-600 tabular-nums shrink-0 ml-1">₹{fmtNum(po.grandTotal || po.total)}</span>
                                     {po.taxPct > 0 && <span className="text-[11px] text-slate-400 shrink-0">+{po.taxPct}% GST</span>}
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                         <button onClick={() => openModal('po', po)} className="p-0.5 text-slate-400 hover:text-violet-500"><Edit2 size={10} /></button>
@@ -1195,10 +1263,10 @@ export default function ClientDashboard({ lead: initialLead, onBack, user, userR
                                             <span>Description</span><span className="text-center">Qty</span><span className="text-center">UOM</span><span className="text-right">Rate</span><span className="text-right">Amount</span>
                                         </div>
                                         {po.items.map((it, i) => (
-                                            <div key={i} className="grid px-2 py-1 border-b border-slate-50 last:border-0 text-[11px]" style={{ gridTemplateColumns: '1fr 40px 40px 64px 64px' }}>
-                                                <span className="text-slate-700 truncate">{it.product || '—'}</span>
+                                            <div key={i} className="grid px-2 py-2 border-b border-slate-50 last:border-0 text-[11px] items-start" style={{ gridTemplateColumns: '1fr 34px 34px 64px 74px' }}>
+                                                <span className="text-slate-700 font-medium leading-tight whitespace-normal break-words pr-1">{it.product || '—'}</span>
                                                 <span className="text-center text-slate-500 tabular-nums">{it.qty || '—'}</span>
-                                                <span className="text-center text-slate-400">{it.uom || '—'}</span>
+                                                <span className="text-center text-slate-400 uppercase">{it.uom || '—'}</span>
                                                 <span className="text-right text-slate-500 tabular-nums">₹{fmtNum(it.rate)}</span>
                                                 <span className="text-right font-semibold text-slate-700 tabular-nums">₹{fmtNum(it.amount)}</span>
                                             </div>
