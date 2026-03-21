@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors } from 'lucide-react';
+import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, Layout } from 'lucide-react';
 
 const Home = ({ onSelectModule, darkMode, showAdmin }) => {
     const modules = [
@@ -61,6 +61,16 @@ const Home = ({ onSelectModule, darkMode, showAdmin }) => {
             color: 'text-amber-500',
             bgColor: 'bg-amber-50 dark:bg-amber-900/20',
             borderColor: 'border-amber-200 dark:border-amber-800',
+            active: true
+        },
+        {
+            id: 'signage',
+            name: 'Signage Calculator',
+            description: 'Estimate physical signage costs (ACP, Acrylic, Flex)',
+            icon: Layout,
+            color: 'text-indigo-500',
+            bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
+            borderColor: 'border-indigo-200 dark:border-indigo-800',
             active: true
         }
     ];

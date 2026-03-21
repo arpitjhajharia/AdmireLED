@@ -23,6 +23,10 @@ import ReportingTracker from './components/ReportingTracker';
 import CRMManager from './components/CRMManager';
 import MiscStockTracker from './components/MiscStockTracker';
 import CutListCalculator from './components/CutListCalculator';
+import SignageCalculator from './components/SignageCalculator';
+import SignageInventoryManager from './components/SignageInventoryManager';
+import SignageQuotesManager from './components/SignageQuotesManager';
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -173,34 +177,34 @@ const App = () => {
     // Check if anything has changed (ignoring auto-appended -COPY and (Copy))
     // Check if anything has changed (ignoring auto-appended -COPY and (Copy))
     let currentRef = calcState.ref;
-    
+
     // Auto-generate ref if missing or if it has -COPY suffix
     if (!currentRef || currentRef.includes('-COPY')) {
-        try {
-            currentRef = await getNextQuoteRef();
-            // Upate state immediately so we don't re-generate next time
-            setCalcState(prev => ({ ...prev, ref: currentRef }));
-        } catch (err) {
-            console.error("Error generating quote ref:", err);
-            // Fallback or alert? Let's just alert and stop for now if we can't get a ref.
-            return alert("Could not generate quote reference. Please try again.");
-        }
+      try {
+        currentRef = await getNextQuoteRef();
+        // Upate state immediately so we don't re-generate next time
+        setCalcState(prev => ({ ...prev, ref: currentRef }));
+      } catch (err) {
+        console.error("Error generating quote ref:", err);
+        // Fallback or alert? Let's just alert and stop for now if we can't get a ref.
+        return alert("Could not generate quote reference. Please try again.");
+      }
     }
 
     if (lastSavedState) {
 
-        const s1 = JSON.parse(lastSavedState);
-        const s2 = { ...calcState };
-        
-        // Strip auto-suffixes for comparison
-        if (s2.ref && s2.ref === s1.ref + '-COPY') s2.ref = s1.ref;
-        if (s2.client && s2.client === s1.client + ' (Copy)') s2.client = s1.client;
-        if (s2.project && s2.project === s1.project + ' (Copy)') s2.project = s1.project;
-        
-        if (JSON.stringify(s1) === JSON.stringify(s2)) {
-            alert("No changes detected since the quote was loaded. Version not saved.");
-            return;
-        }
+      const s1 = JSON.parse(lastSavedState);
+      const s2 = { ...calcState };
+
+      // Strip auto-suffixes for comparison
+      if (s2.ref && s2.ref === s1.ref + '-COPY') s2.ref = s1.ref;
+      if (s2.client && s2.client === s1.client + ' (Copy)') s2.client = s1.client;
+      if (s2.project && s2.project === s1.project + ' (Copy)') s2.project = s1.project;
+
+      if (JSON.stringify(s1) === JSON.stringify(s2)) {
+        alert("No changes detected since the quote was loaded. Version not saved.");
+        return;
+      }
     }
 
     let allScreensData = null;
@@ -254,7 +258,7 @@ const App = () => {
 
       // 1. Always save to the global quotes collection
       await globalQuoteRef.set(quoteData);
-      
+
       // Update last saved state after success
       setLastSavedState(JSON.stringify(calcState));
 
@@ -271,12 +275,12 @@ const App = () => {
           status: 'Sent',
           items: allScreensData
             ? allScreensData.screenConfigs.map((s, i) => ({
-                product: `Screen #${i + 1} — ${s.targetWidth}×${s.targetHeight} ${calcState.unit}`,
-                qty: Number(s.screenQty) || 0,
-                uom: 'Nos',
-                rate: Math.round(allScreensData.calculations[i]?.matrix?.sell?.unit || 0),
-                amount: Math.round(allScreensData.calculations[i]?.totalProjectSell || 0),
-              }))
+              product: `Screen #${i + 1} — ${s.targetWidth}×${s.targetHeight} ${calcState.unit}`,
+              qty: Number(s.screenQty) || 0,
+              uom: 'Nos',
+              rate: Math.round(allScreensData.calculations[i]?.matrix?.sell?.unit || 0),
+              amount: Math.round(allScreensData.calculations[i]?.totalProjectSell || 0),
+            }))
             : [],
           subtotal: Math.round(finalAmount || 0),
           gstPct: 0,
@@ -313,10 +317,10 @@ const App = () => {
       newState.project = newState.project + ' (Copy)';
       if (newState.ref) newState.ref = newState.ref + '-COPY';
     }
-    
+
     // Store original state for comparison (before -COPY)
     setLastSavedState(JSON.stringify(newState));
-    
+
     setCalcState(newState);
     setView('quote');
     setIsMenuOpen(false);
@@ -325,13 +329,13 @@ const App = () => {
   // ── Open a CRM LED quote in the Calculator ──
   const handleOpenLEDCalculatorFromCRM = async (crmQuote) => {
     let fullState = crmQuote.calculatorState;
-    
+
     // If not in CRM quote directly, try fetching via globalQuoteId
     if (!fullState && crmQuote.globalQuoteId) {
       try {
         const globalDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('quotes').doc(crmQuote.globalQuoteId).get();
         if (globalDoc.exists) {
-            fullState = globalDoc.data().calculatorState;
+          fullState = globalDoc.data().calculatorState;
         }
       } catch (e) {
         console.error("Error fetching global quote details:", e);
@@ -419,6 +423,11 @@ const App = () => {
                 Cut List
               </span>
             )}
+            {activeModule === 'signage' && (
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400">
+                Signage
+              </span>
+            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -432,6 +441,16 @@ const App = () => {
               <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
               <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
+            </nav>
+          )}
+
+          {activeModule === 'signage' && (
+            <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+              {!isLabour && (
+                <button onClick={() => setView('quote')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
+              )}
+              <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
+              <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Saved Quotes</button>
             </nav>
           )}
 
@@ -581,6 +600,24 @@ const App = () => {
 
         {activeModule === 'cut_list' && (
           <CutListCalculator />
+        )}
+
+        {activeModule === 'signage' && (
+          <SignageCalculator user={user} userRole={userRole} readOnly={isBOMReadOnly} />
+        )}
+
+        {activeModule === 'signage' && (
+          <>
+            {view === 'inventory' && (
+              <SignageInventoryManager user={user} readOnly={isInventoryReadOnly} />
+            )}
+            {view === 'quote' && (
+              <SignageCalculator user={user} exchangeRate={exchangeRate} />
+            )}
+            {view === 'saved' && (
+              <SignageQuotesManager onLoadQuote={(loadedState) => setView('quote')} />
+            )}
+          </>
         )}
 
         {activeModule === 'admin' && showUsersTab && (

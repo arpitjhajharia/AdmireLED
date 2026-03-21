@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Package, Archive, Plus, Trash2, Edit, X, Search, Layers, ClipboardList, Info, AlertCircle, TrendingUp, TrendingDown, History, BarChart2, Copy } from 'lucide-react';
+import { Package, Archive, Plus, Trash2, Edit, X, Search, Layers, ClipboardList, Info, AlertCircle, TrendingUp, TrendingDown, History, BarChart2, Copy, Wand2 } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency } from '../lib/utils';
 
@@ -232,6 +232,33 @@ const MiscStockTracker = ({ user, userRole }) => {
         updatedSpecs[index] = { ...updatedSpecs[index], [field]: value };
         setItemForm(prev => ({ ...prev, specs: updatedSpecs }));
     };
+    
+    // Auto-generate SKU
+    const generateAutoSKU = () => {
+        const { type, product, vendor, name, drawingId, length, weightPerM, ratePerKg, watts, brand, colour, wattage, voltage, ipRating, acpLength, acpWidth, thickness, rateSft, specs, foil } = itemForm;
+        if (!product || !vendor) return alert("Product and Vendor are needed to generate SKU.");
+        
+        let specStr = "";
+        if (type === 'profile') {
+            specStr = `${drawingId}, ${length}mm, ${weightPerM}kg/m, ₹${ratePerKg}/kg`;
+        } else if (type === 'led_module') {
+            const parts = [name, watts, brand, colour].filter(Boolean);
+            specStr = parts.join(', ');
+        } else if (type === 'smps') {
+            const parts = [name, brand, wattage, voltage, ipRating].filter(Boolean);
+            specStr = parts.join(', ');
+        } else if (type === 'acp') {
+            const dims = (acpLength && acpWidth) ? `${acpLength}'x${acpWidth}'` : "";
+            const parts = [name, dims, thickness ? `${thickness}mm` : "", foil, colour].filter(Boolean);
+            specStr = parts.join(', ');
+        } else {
+            const parts = [name, ...specs.map(s => `${s.value}`)].filter(Boolean);
+            specStr = parts.join(', ');
+        }
+        
+        const autoSKU = `${product}/${vendor}/${specStr}`;
+        setItemForm(prev => ({ ...prev, sku: autoSKU }));
+    };
 
     const handleDuplicateItem = (item) => {
         const { id, createdAt, updatedAt, qty, value, avgRate, ...cleanData } = item;
@@ -444,10 +471,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <label className={labelCls}>Vendor*</label>
                                 <input className={inputCls + " w-full"} value={itemForm.vendor} onChange={e => setItemForm({...itemForm, vendor: e.target.value})} placeholder="Vendor" />
                             </div>
-                            <div>
-                                <label className={labelCls}>SKU*</label>
-                                <input className={inputCls + " w-full"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
-                            </div>
                             <div className="md:col-span-2">
                                 <label className={labelCls}>Description*</label>
                                 <input className={inputCls + " w-full"} value={itemForm.name} onChange={e => setItemForm({...itemForm, name: e.target.value})} placeholder="ACP description" />
@@ -476,6 +499,15 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <label className={labelCls}>Rate/sft*</label>
                                 <input type="number" className={inputCls + " w-full"} value={itemForm.rateSft} onChange={e => setItemForm({...itemForm, rateSft: e.target.value})} placeholder="0.00" />
                             </div>
+                            <div>
+                                <label className={labelCls}>SKU*</label>
+                                <div className="relative group">
+                                    <input className={inputCls + " w-full pr-8 border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
+                                    <button onClick={generateAutoSKU} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors" title="Auto-Generate SKU">
+                                        <Wand2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
                             <div className="md:col-span-4 lg:col-span-11 flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
                                 <div className="text-[12px] font-bold text-slate-500">
                                     Calculated Rate/pc: <span className="text-slate-900 dark:text-white ml-1">
@@ -499,10 +531,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                             <div>
                                 <label className={labelCls}>Vendor*</label>
                                 <input className={inputCls + " w-full"} value={itemForm.vendor} onChange={e => setItemForm({...itemForm, vendor: e.target.value})} placeholder="Vendor" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>SKU*</label>
-                                <input className={inputCls + " w-full"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
                             </div>
                             <div className="md:col-span-2">
                                 <label className={labelCls}>Description*</label>
@@ -528,6 +556,15 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <label className={labelCls}>Rate/pc*</label>
                                 <input type="number" className={inputCls + " w-full"} value={itemForm.rate} onChange={e => setItemForm({...itemForm, rate: e.target.value})} placeholder="0.00" />
                             </div>
+                            <div>
+                                <label className={labelCls}>SKU*</label>
+                                <div className="relative group">
+                                    <input className={inputCls + " w-full pr-8 border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
+                                    <button onClick={generateAutoSKU} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors" title="Auto-Generate SKU">
+                                        <Wand2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
                             <div className="md:col-span-4 lg:col-span-10 flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
                                 <button onClick={() => { setShowItemForm(false); setEditingItem(null); }} className="px-4 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
                                 <button onClick={handleSaveItem} className="bg-slate-800 dark:bg-slate-600 text-white px-5 py-1.5 rounded-lg text-[12px] font-bold hover:bg-slate-900">
@@ -544,10 +581,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                             <div>
                                 <label className={labelCls}>Vendor*</label>
                                 <input className={inputCls + " w-full"} value={itemForm.vendor} onChange={e => setItemForm({...itemForm, vendor: e.target.value})} placeholder="Vendor" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>SKU*</label>
-                                <input className={inputCls + " w-full"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
                             </div>
                             <div className="md:col-span-2">
                                 <label className={labelCls}>Description*</label>
@@ -569,6 +602,15 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <label className={labelCls}>Rate/pc*</label>
                                 <input type="number" className={inputCls + " w-full"} value={itemForm.rate} onChange={e => setItemForm({...itemForm, rate: e.target.value})} placeholder="0.00" />
                             </div>
+                            <div>
+                                <label className={labelCls}>SKU*</label>
+                                <div className="relative group">
+                                    <input className={inputCls + " w-full pr-8 border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
+                                    <button onClick={generateAutoSKU} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors" title="Auto-Generate SKU">
+                                        <Wand2 size={13} />
+                                    </button>
+                                </div>
+                            </div>
                             <div className="md:col-span-4 lg:col-span-9 flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
                                 <button onClick={() => { setShowItemForm(false); setEditingItem(null); }} className="px-4 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Cancel</button>
                                 <button onClick={handleSaveItem} className="bg-slate-800 dark:bg-slate-600 text-white px-5 py-1.5 rounded-lg text-[12px] font-bold hover:bg-slate-900">
@@ -585,10 +627,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                             <div>
                                 <label className={labelCls}>Vendor*</label>
                                 <input className={inputCls + " w-full"} value={itemForm.vendor} onChange={e => setItemForm({...itemForm, vendor: e.target.value})} placeholder="Vendor" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>SKU*</label>
-                                <input className={inputCls + " w-full"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
                             </div>
                             <div>
                                 <label className={labelCls}>Drawing ID*</label>
@@ -609,6 +647,15 @@ const MiscStockTracker = ({ user, userRole }) => {
                             <div>
                                 <label className={labelCls}>Rate/kg*</label>
                                 <input type="number" className={inputCls + " w-full"} value={itemForm.ratePerKg} onChange={e => setItemForm({...itemForm, ratePerKg: e.target.value})} placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>SKU*</label>
+                                <div className="relative group">
+                                    <input className={inputCls + " w-full pr-8 border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-001" />
+                                    <button onClick={generateAutoSKU} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors" title="Auto-Generate SKU">
+                                        <Wand2 size={13} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="md:col-span-4 lg:col-span-9 flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
                                 <div className="text-[12px] font-bold text-slate-500">
@@ -635,16 +682,21 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <input className={inputCls + " w-full"} value={itemForm.name} onChange={e => setItemForm({...itemForm, name: e.target.value})} placeholder="e.g. Master Cable" />
                             </div>
                             <div>
-                                <label className={labelCls}>SKU / Model</label>
-                                <input className={inputCls + " w-full"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="PC-001" />
-                            </div>
-                            <div>
                                 <label className={labelCls}>Vendor</label>
                                 <input className={inputCls + " w-full"} value={itemForm.vendor} onChange={e => setItemForm({...itemForm, vendor: e.target.value})} placeholder="Supplier Name" />
                             </div>
                             <div>
                                 <label className={labelCls}>Rate / pc (₹)</label>
                                 <input type="number" className={inputCls + " w-full"} value={itemForm.rate} onChange={e => setItemForm({...itemForm, rate: e.target.value})} placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>SKU / Model</label>
+                                <div className="relative group">
+                                    <input className={inputCls + " w-full pr-8 border-indigo-200 dark:border-indigo-900 focus:ring-indigo-500"} value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="PC-001" />
+                                    <button onClick={generateAutoSKU} className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors" title="Auto-Generate SKU">
+                                        <Wand2 size={13} />
+                                    </button>
+                                </div>
                             </div>
                             
                             <div className="md:col-span-6 border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
@@ -699,17 +751,17 @@ const MiscStockTracker = ({ user, userRole }) => {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <div>
                             <label className={labelCls}>Type</label>
-                            <select className={inputCls + " w-full"} value={txForm.type} onChange={e => setTxForm({...txForm, type: e.target.value})}>
-                                <option value="in">Stock IN</option>
-                                <option value="out">Stock OUT</option>
-                            </select>
+                            <div className="flex bg-slate-200/50 dark:bg-slate-900 rounded-lg p-0.5 gap-0.5 border border-slate-200 dark:border-slate-700">
+                                <button onClick={() => setTxForm({...txForm, type: 'in'})} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${txForm.type === 'in' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>STOCK IN</button>
+                                <button onClick={() => setTxForm({...txForm, type: 'out'})} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${txForm.type === 'out' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>STOCK OUT</button>
+                            </div>
                         </div>
                         <div className="md:col-span-2">
-                            <label className={labelCls}>Select Product</label>
-                            <select className={inputCls + " w-full"} value={txForm.itemId} onChange={e => setTxForm({...txForm, itemId: e.target.value})}>
-                                <option value="">Choose item...</option>
-                                {items.sort((a,b) => a.name.localeCompare(b.name)).map(i => (
-                                    <option key={i.id} value={i.id}>{i.sku} | {i.name}</option>
+                            <label className={labelCls}>Select Product (by SKU)</label>
+                            <select className={inputCls + " w-full font-bold text-indigo-600 dark:text-indigo-400"} value={txForm.itemId} onChange={e => setTxForm({...txForm, itemId: e.target.value})}>
+                                <option value="">Identify by SKU...</option>
+                                {items.sort((a,b) => (a.sku || '').localeCompare(b.sku || '')).map(i => (
+                                    <option key={i.id} value={i.id}>{i.sku || 'No SKU'} - {i.name}</option>
                                 ))}
                             </select>
                         </div>
@@ -747,7 +799,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                                 <>
                                     <th className="px-3 py-1.5 text-left font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Product</th>
                                     <th className="px-3 py-1.5 text-left font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Description</th>
-                                    <th className="px-3 py-1.5 text-left font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">SKU</th>
                                     <th className="px-3 py-1.5 text-left font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Vendor</th>
                                     <th className="px-3 py-1.5 text-left font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Specs</th>
                                     <th className="px-3 py-1.5 text-center font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Stock</th>
@@ -780,9 +831,6 @@ const MiscStockTracker = ({ user, userRole }) => {
                                     </td>
                                     <td className="px-3 py-2">
                                         <span className="text-slate-500 dark:text-slate-400 font-bold truncate block min-w-[120px]">{item.name}</span>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                        <span className="font-bold text-slate-400 tabular-nums truncate uppercase tracking-tight block">{item.sku || 'NO SKU'}</span>
                                     </td>
                                     <td className="px-3 py-2">
                                         <span className="text-teal-600 dark:text-teal-400 font-bold uppercase tracking-tight truncate block max-w-[120px]">
