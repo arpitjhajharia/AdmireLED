@@ -23,9 +23,7 @@ import ReportingTracker from './components/ReportingTracker';
 import CRMManager from './components/CRMManager';
 import MiscStockTracker from './components/MiscStockTracker';
 import CutListCalculator from './components/CutListCalculator';
-import SignageCalculator from './components/SignageCalculator';
-import SignageInventoryManager from './components/SignageInventoryManager';
-import SignageQuotesManager from './components/SignageQuotesManager';
+
 
 
 const App = () => {
@@ -423,11 +421,6 @@ const App = () => {
                 Cut List
               </span>
             )}
-            {activeModule === 'signage' && (
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400">
-                Signage
-              </span>
-            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -441,16 +434,6 @@ const App = () => {
               <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
               <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
-            </nav>
-          )}
-
-          {activeModule === 'signage' && (
-            <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
-              {!isLabour && (
-                <button onClick={() => setView('quote')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
-              )}
-              <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
-              <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Saved Quotes</button>
             </nav>
           )}
 
@@ -600,24 +583,6 @@ const App = () => {
 
         {activeModule === 'cut_list' && (
           <CutListCalculator />
-        )}
-
-        {activeModule === 'signage' && (
-          <SignageCalculator user={user} userRole={userRole} readOnly={isBOMReadOnly} />
-        )}
-
-        {activeModule === 'signage' && (
-          <>
-            {view === 'inventory' && (
-              <SignageInventoryManager user={user} readOnly={isInventoryReadOnly} />
-            )}
-            {view === 'quote' && (
-              <SignageCalculator user={user} exchangeRate={exchangeRate} />
-            )}
-            {view === 'saved' && (
-              <SignageQuotesManager onLoadQuote={(loadedState) => setView('quote')} />
-            )}
-          </>
         )}
 
         {activeModule === 'admin' && showUsersTab && (
