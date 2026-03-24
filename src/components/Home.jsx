@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors } from 'lucide-react';
+import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, LayoutDashboard } from 'lucide-react';
 
 const Home = ({ onSelectModule, darkMode, showAdmin }) => {
     const modules = [
@@ -61,6 +61,16 @@ const Home = ({ onSelectModule, darkMode, showAdmin }) => {
             color: 'text-amber-500',
             bgColor: 'bg-amber-50 dark:bg-amber-900/20',
             borderColor: 'border-amber-200 dark:border-amber-800',
+            active: true
+        },
+        {
+            id: 'signage',
+            name: 'Signage Calculator',
+            description: 'Compute precise BOM & Quotes for Flex Signage Boards',
+            icon: LayoutDashboard,
+            color: 'text-pink-500',
+            bgColor: 'bg-pink-50 dark:bg-pink-900/20',
+            borderColor: 'border-pink-200 dark:border-pink-800',
             active: true
         }
     ];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X, DollarSign } from 'lucide-react';
+import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X, DollarSign, LayoutDashboard } from 'lucide-react';
 import { auth, db, appId } from './lib/firebase';
 import { calculateBOM, generateId } from './lib/utils';
 import { getNextQuoteRef } from './lib/quotes';
@@ -24,12 +24,19 @@ import CRMManager from './components/CRMManager';
 import MiscStockTracker from './components/MiscStockTracker';
 import CutListCalculator from './components/CutListCalculator';
 
+// Signage Components
+import SignageCalculator from './components/SignageCalculator';
+import SignageInventoryManager from './components/SignageInventoryManager';
+import SignageQuotesManager from './components/SignageQuotesManager';
 
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [activeModule, setActiveModule] = useState('home');
+
+    // Signage Application Load State
+    const [signageLoadedState, setSignageLoadedState] = useState(null);
   const [view, setView] = useState('quote');
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -421,6 +428,11 @@ const App = () => {
                 Cut List
               </span>
             )}
+            {activeModule === 'signage' && (
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-400">
+                Signage Calc
+              </span>
+            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -433,6 +445,16 @@ const App = () => {
 
               <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
+              <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
+            </nav>
+          )}
+
+          {activeModule === 'signage' && (
+            <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg">
+              {!isLabour && (
+                <button onClick={() => setView('quote')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'quote' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Calculator</button>
+              )}
+              <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
             </nav>
           )}
@@ -491,6 +513,22 @@ const App = () => {
               </>
             )}
 
+            {activeModule === 'signage' && (
+              <>
+                {!isLabour && (
+                  <button onClick={() => { setView('quote'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'quote' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                    <LayoutDashboard size={18} /> Calculator
+                  </button>
+                )}
+                <button onClick={() => { setView('inventory'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'inventory' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <Box size={18} /> Components
+                </button>
+                <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                  <FileText size={18} /> Quotes
+                </button>
+              </>
+            )}
+
             {/* Mobile Exchange Rate Input (Moved to Admin Tab) */}
 
             <div className="border-t border-slate-100 dark:border-slate-700 my-2 pt-2">
@@ -507,7 +545,7 @@ const App = () => {
           <Home
             onSelectModule={(mod) => {
               setActiveModule(mod);
-              if (mod === 'led') setView('quote');
+              if (mod === 'led' || mod === 'signage') setView('quote');
             }}
             darkMode={darkMode}
             showAdmin={showUsersTab}
@@ -560,6 +598,37 @@ const App = () => {
                 setExchangeRate={setExchangeRate}
                 onSaveQuote={handleSaveQuote}
                 readOnly={isBOMReadOnly}
+              />
+            )}
+          </>
+        )}
+
+        {activeModule === 'signage' && (
+          <>
+            {view === 'inventory' && (
+              <SignageInventoryManager
+                user={user}
+                userRole={userRole}
+                readOnly={isInventoryReadOnly}
+              />
+            )}
+            {view === 'saved' && (
+              <SignageQuotesManager
+                user={user}
+                userRole={userRole}
+                readOnly={isBOMReadOnly}
+                onLoadQuote={(quote, isClone) => {
+                    setSignageLoadedState(isClone ? { ...quote.state, ref: '' } : quote.state);
+                    setView('quote');
+                }}
+              />
+            )}
+            {view === 'quote' && (
+              <SignageCalculator
+                user={user}
+                userRole={userRole}
+                readOnly={isBOMReadOnly}
+                loadedState={signageLoadedState}
               />
             )}
           </>

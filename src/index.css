@@ -135,12 +135,10 @@ body {
   }
 
   /* 3. Make the Print Portal visible and force it to fill the page */
-  .print-only-portal, .print-only-portal * {
+  .print-only-portal {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-  }
-  .print-only-portal {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
