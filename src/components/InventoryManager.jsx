@@ -80,7 +80,8 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
                 !newItem.brightness || !newItem.refreshRate ||
                 !newItem.avgPower || !newItem.maxPower ||
                 !newItem.contrast || !newItem.viewAngleH || !newItem.viewAngleV ||
-                !newItem.ipFront || !newItem.ipBack) {
+                !newItem.ipFront || !newItem.ipBack ||
+                (newItem.type === 'ready' && !newItem.material)) {
                 return alert("Please fill all compulsory (*) technical fields.");
             }
         }
@@ -381,6 +382,9 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
                     {(newItem.type === 'module' || newItem.type === 'ready') && (
                         <>
                             <input placeholder="Series (Optional)" className={inputCls} value={newItem.series} onChange={e => setNewItem({ ...newItem, series: e.target.value })} />
+                            {newItem.type === 'ready' && (
+                                <input placeholder="Cabinet Material (e.g. Die-Cast)*" className={inputCls} value={newItem.material} onChange={e => setNewItem({ ...newItem, material: e.target.value })} />
+                            )}
                             <input placeholder="Pitch (mm)*" type="number" className={inputCls + " border-teal-500 ring-1 ring-teal-500"} value={newItem.pitch} onChange={e => setNewItem({ ...newItem, pitch: e.target.value })} />
                             <select className={inputCls + " border-teal-500 ring-1 ring-teal-500"} value={newItem.indoor} onChange={e => setNewItem({ ...newItem, indoor: e.target.value })}>
                                 <option value="true">Indoor</option>

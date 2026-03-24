@@ -33,6 +33,7 @@ export const formatComponentSpecs = (item) => {
     if (item.type === 'module' || item.type === 'ready') {
         if (item.series) specs.push(item.series);
         if (item.pitch) specs.push(`P${item.pitch}`);
+        if (item.type === 'ready' && item.material) specs.push(item.material);
         specs.push(item.indoor === 'true' || item.indoor === true ? 'Indoor' : 'Outdoor');
         if (item.ledType) specs.push(item.ledType);
         if (item.lampMake) specs.push(item.lampMake);
