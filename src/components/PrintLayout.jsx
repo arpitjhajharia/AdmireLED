@@ -73,8 +73,8 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                 const sellStructure = (comms.sellStructureTotal || 0) / (screenQty || 1);
 
                 const sellLEDBase = sellTotalPerScreen - sellProc - sellInstall - sellStructure;
-                const sellLEDFinal = sellLEDBase / 1.02;
-                const sellSpares = sellLEDFinal * 0.02;
+                const sellLEDFinal = sellLEDBase;           // Full LED panel price (unchanged)
+                const sellSpares = sellLEDBase * 0.02;      // 2% added ON TOP of LED panel price
 
                 const ledPanelLabel = pricingMode === 'sqft' && targetSellPrice
                     ? `LED Panel (${formatCurrency(targetSellPrice, currency)} per sqft)`
@@ -104,6 +104,8 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                 const structureRateLabel = comms.structureVal && comms.structureUnit === 'sqft'
                     ? `${formatCurrency(comms.structureVal, currency)}/sqft`
                     : ''; // per screen — blank
+
+                const sparesTotal = sellSpares * screenQty;  // total spares across all screens
 
                 const commercialRows = [
                     { name: ledPanelLabel, rateLabel: ledRateLabel, rate: sellLEDFinal },
@@ -214,8 +216,8 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     ))}
                                     <tr className="bg-slate-100">
                                         <td colSpan={screenQty > 1 ? 3 : 3} className="p-2 border border-slate-300 text-right font-bold uppercase">Subtotal (Excl. GST)</td>
-                                        {screenQty > 1 && <td className="p-2 border border-slate-300 text-right font-bold text-sm">{formatCurrency(totalProjectSell / (screenQty || 1), currency)}</td>}
-                                        <td className="p-2 border border-slate-300 text-right font-bold text-sm">{formatCurrency(totalProjectSell, currency)}</td>
+                                        {screenQty > 1 && <td className="p-2 border border-slate-300 text-right font-bold text-sm">{formatCurrency((totalProjectSell + sparesTotal) / (screenQty || 1), currency)}</td>}
+                                        <td className="p-2 border border-slate-300 text-right font-bold text-sm">{formatCurrency(totalProjectSell + sparesTotal, currency)}</td>
                                     </tr>
                                 </tbody>
                             </table>
