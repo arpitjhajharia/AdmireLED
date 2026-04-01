@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X, DollarSign, LayoutDashboard } from 'lucide-react';
+import { Calculator, Sun, Moon, Box, Archive, FileText, Shield, LogOut, Database, Menu, X, DollarSign, LayoutDashboard, Image as ImageIcon } from 'lucide-react';
 import { auth, db, appId } from './lib/firebase';
 import { calculateBOM, generateId } from './lib/utils';
 import { getNextQuoteRef } from './lib/quotes';
@@ -23,6 +23,7 @@ import ReportingTracker from './components/ReportingTracker';
 import CRMManager from './components/CRMManager';
 import MiscStockTracker from './components/MiscStockTracker';
 import CutListCalculator from './components/CutListCalculator';
+import QuoteImageManager from './components/QuoteImageManager';
 
 // Signage Components
 import SignageCalculator from './components/SignageCalculator';
@@ -134,7 +135,7 @@ const App = () => {
 
   // 4. Global Settings (Exchange Rate)
   useEffect(() => {
-    if (!db) return;
+    if (!db || !user) return;
     const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('global')
       .onSnapshot(doc => {
         if (doc.exists && doc.data().exchangeRate) {
@@ -446,6 +447,9 @@ const App = () => {
               <button onClick={() => setView('inventory')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'inventory' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Components</button>
               <button onClick={() => setView('ledger')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'ledger' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Stock</button>
               <button onClick={() => setView('saved')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'saved' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Quotes</button>
+              {!isLabour && (
+                <button onClick={() => setView('images')} className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${view === 'images' ? 'bg-white dark:bg-slate-600 shadow-sm text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}>Images</button>
+              )}
             </nav>
           )}
 
@@ -510,6 +514,11 @@ const App = () => {
                 <button onClick={() => { setView('saved'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'saved' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
                   <FileText size={18} /> Quotes
                 </button>
+                {!isLabour && (
+                  <button onClick={() => { setView('images'); setIsMenuOpen(false); }} className={`p-3 rounded-lg text-sm font-bold text-left flex items-center gap-3 ${view === 'images' ? 'bg-teal-50 text-teal-700 dark:bg-slate-700 dark:text-teal-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                    <ImageIcon size={18} /> Images
+                  </button>
+                )}
               </>
             )}
 
@@ -599,6 +608,16 @@ const App = () => {
                 onSaveQuote={handleSaveQuote}
                 readOnly={isBOMReadOnly}
               />
+            )}
+
+            {view === 'images' && !isLabour && (
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[60vh]">
+                <QuoteImageManager
+                  user={user}
+                  userRole={userRole}
+                  mode="library"
+                />
+              </div>
             )}
           </>
         )}

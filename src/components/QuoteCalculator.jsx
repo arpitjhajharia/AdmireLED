@@ -1,11 +1,12 @@
 import React from 'react';
-import { Calculator, Settings, Printer, Plus, Trash2, Monitor, DollarSign, Box, Wrench, Percent, Edit, Copy, Save, FileText, Eye, RefreshCw, X, Users } from 'lucide-react';
+import { Calculator, Settings, Printer, Plus, Trash2, Monitor, DollarSign, Box, Wrench, Percent, Edit, Copy, Save, FileText, Eye, RefreshCw, X, Users, Image as ImageIcon } from 'lucide-react';
 import { formatCurrency, generateId, calculateBOM, formatComponentSpecs } from '../lib/utils';
 import { CONFIG } from '../lib/config';
 import { db, appId } from '../lib/firebase';
 import ScreenVisualizer from './ScreenVisualizer';
 import BOMLayout from './BOMLayout';
 import PrintLayout from './PrintLayout';
+import QuoteImageManager from './QuoteImageManager';
 
 // --- Helper Hook ---
 const useDebounce = (value, delay) => {
@@ -594,7 +595,26 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
     const [allScreensTotal, setAllScreensTotal] = React.useState(null);
     const [showPreview, setShowPreview] = React.useState(false);
     const [showBOM, setShowBOM] = React.useState(false);
+    const [showImagePicker, setShowImagePicker] = React.useState(false);
+    const [allQuoteImages, setAllQuoteImages] = React.useState([]);
     const [crmClients, setCrmClients] = React.useState([]);
+
+    // Fetch the image library so we can resolve IDs → full objects for PrintLayout
+    React.useEffect(() => {
+        if (!db) return;
+        const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('quote_images')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snap => {
+                setAllQuoteImages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            }, err => console.error('quote_images fetch error:', err));
+        return () => unsub();
+    }, [db, appId]);
+
+    // Derive the full image objects that are selected for this quote
+    const selectedRefImageIds = state.refImages || [];
+    const selectedRefImages = selectedRefImageIds
+        .map(id => allQuoteImages.find(img => img.id === id))
+        .filter(Boolean);
 
     // Fetch CRM leads for the Client dropdown
     React.useEffect(() => {
@@ -894,6 +914,7 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                 allScreensData={allScreensTotal ? { ...allScreensTotal, clientName: client, projectName: project } : null}
                                 currency='INR'
                                 exchangeRate={exchangeRate}
+                                refImages={selectedRefImages}
                             />
                         </div>
                     </div>
@@ -1474,6 +1495,22 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                 <FileText size={16} className="text-blue-400" /> BOM
                             </button>
 
+                            {/* Image picker button */}
+                            {!isSupervisor && (
+                                <button
+                                    onClick={() => setShowImagePicker(prev => !prev)}
+                                    className={`flex-1 rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border py-2 ${
+                                        showImagePicker
+                                            ? 'bg-teal-600 border-teal-500 text-white'
+                                            : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                                    }`}
+                                    title="Reference Images"
+                                >
+                                    <ImageIcon size={16} className={showImagePicker ? 'text-white' : 'text-teal-400'} />
+                                    <span>Images{selectedRefImageIds.length > 0 ? ` (${selectedRefImageIds.length})` : ''}</span>
+                                </button>
+                            )}
+
                             {/* HIDE PRINT BUTTON FOR SUPERVISOR TO PREVENT PRICE LEAK */}
                             {!isSupervisor && (
                                 <button onClick={() => setShowPreview(true)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex flex-col items-center justify-center gap-1 transition-colors border border-slate-700 py-2">
@@ -1494,6 +1531,20 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                 </button>
                             )}
                         </div>
+
+                        {/* ── Image Picker Panel ── */}
+                        {showImagePicker && !isSupervisor && (
+                            <div className="mt-3 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '420px' }}>
+                                <QuoteImageManager
+                                    user={user}
+                                    userRole={userRole}
+                                    mode="picker"
+                                    selectedIds={selectedRefImageIds}
+                                    onSelectionChange={(ids) => setState(prev => ({ ...prev, refImages: ids }))}
+                                    onClose={() => setShowImagePicker(false)}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

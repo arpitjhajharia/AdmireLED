@@ -47,6 +47,7 @@ export const formatComponentSpecs = (item) => {
         if (item.ipFront || item.ipBack) specs.push(`IP: ${item.ipFront}/${item.ipBack}`);
         if (item.weight) specs.push(`${item.weight}kg`);
         if (item.warrantyPeriod) specs.push(`Warranty: ${item.warrantyPeriod} yr${item.warrantyPeriod > 1 ? 's' : ''}`);
+        if (item.maintenance) specs.push(`Maint: ${item.maintenance}`);
     } else if (item.type === 'cabinet') {
         if (item.material) specs.push(item.material);
         specs.push(item.indoor === 'true' || item.indoor === true ? 'Indoor' : 'Outdoor');

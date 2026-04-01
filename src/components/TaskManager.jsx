@@ -291,7 +291,7 @@ const TaskManager = ({ user, userRole }) => {
             }
             if (isCompleted) {
                 completedTasksList.push(t);
-            } else if (t.assignedTo === user?.username) {
+            } else if (t.assignedTo?.toLowerCase() === user?.username?.toLowerCase()) {
                 myTasksList.push(t);
             } else {
                 otherTasksList.push(t);

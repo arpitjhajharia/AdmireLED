@@ -18,7 +18,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
         brightness: '', refreshRate: '',
         ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
         contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: '', voltage: '',
-        warrantyPeriod: ''
+        warrantyPeriod: '', maintenance: ''
     });
 
     const [loading, setLoading] = React.useState(true);
@@ -149,7 +149,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
                     brightness: '', refreshRate: '',
                     ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
                     contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: '', voltage: '',
-                    warrantyPeriod: ''
+                    warrantyPeriod: '', maintenance: ''
                 });
                 alert("Item Added!");
             }
@@ -183,7 +183,7 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
             brightness: '', refreshRate: '',
             ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
             contrast: '', viewAngleH: '', viewAngleV: '', ipFront: '', ipBack: '', ports: '', amps: '', voltage: '',
-            warrantyPeriod: ''
+            warrantyPeriod: '', maintenance: ''
         });
     };
 
@@ -420,6 +420,12 @@ const InventoryManager = ({ user, transactions = [], readOnly = false, exchangeR
                                 <input placeholder="IP Rating (Back)*" className={inputCls + " flex-1"} value={newItem.ipBack} onChange={e => setNewItem({ ...newItem, ipBack: e.target.value })} />
                             </div>
                             <input placeholder="Warranty (Years)*" type="number" className={inputCls + " border-blue-400"} value={newItem.warrantyPeriod} onChange={e => setNewItem({ ...newItem, warrantyPeriod: e.target.value })} />
+                            <select className={inputCls} value={newItem.maintenance} onChange={e => setNewItem({ ...newItem, maintenance: e.target.value })}>
+                                <option value="">Maintenance Access</option>
+                                <option value="Rear">Rear</option>
+                                <option value="Front">Front</option>
+                                <option value="Front & Rear">Front & Rear</option>
+                            </select>
                         </>
                     )}
 

@@ -5,7 +5,7 @@ import { formatCurrency, generateId } from '../lib/utils';
 import { CONFIG } from '../lib/config';
 
 // 4. Print Layout - Dual Render (Visualizer Removed from Print)
-const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, date }) => {
+const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, date, refImages = [] }) => {
     // 1. Data Preparation
     const hasAllScreensData = allScreensData && allScreensData.calculations && allScreensData.calculations.length > 0;
     const isMultiScreen = hasAllScreensData && allScreensData.calculations.length > 1;
@@ -37,6 +37,29 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                     </div>
                 </div>
             </div>
+
+            {/* Reference Images — shown only when images are selected */}
+            {refImages.length > 0 && (
+                <div className="mb-6">
+                    <div className={`grid gap-2 ${
+                        refImages.length === 1 ? 'grid-cols-1' :
+                        refImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-3'
+                    }`}>
+                        {refImages.map(img => (
+                            <div key={img.id} className="overflow-hidden rounded border border-slate-200">
+                                <img
+                                    src={img.dataUrl}
+                                    alt={img.name}
+                                    className="w-full object-cover"
+                                    style={{ maxHeight: refImages.length === 1 ? '300px' : '180px' }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-1.5 text-[8px] text-slate-400 tracking-wide">Reference images for illustrative purposes only.</p>
+                </div>
+            )}
 
             {/* Loop through each configuration */}
             {configs.map((config, index) => {
@@ -169,6 +192,12 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <span className="font-semibold text-slate-500">Controller:</span> <span className="col-span-2">{processor ? `${processor.brand} ${processor.model}` : 'Standard'}</span>
                                     <span className="font-semibold text-slate-500">Viewing:</span> <span className="col-span-2">H: {moduleType.viewAngleH}° / V: {moduleType.viewAngleV}°</span>
                                     <span className="font-semibold text-slate-500 text-[10px]">IP Rating:</span> <span className="col-span-2 font-bold text-blue-700">Front: IP{moduleType.ipFront} / Back: IP{moduleType.ipBack}</span>
+                                    {moduleType.maintenance && (
+                                        <>
+                                            <span className="font-semibold text-slate-500">Maintenance:</span>
+                                            <span className="col-span-2">{moduleType.maintenance}</span>
+                                        </>
+                                    )}
                                     {finalWarranty !== undefined && (
                                         <>
                                             <span className="font-semibold text-slate-500">Warranty:</span> 
