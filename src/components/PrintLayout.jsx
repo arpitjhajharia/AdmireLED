@@ -112,11 +112,11 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                     : 'Structure';
 
                 // Rate labels — only show when rate is NOT per-screen (sqft/sqm only)
-                const ledRateLabel = (() => {
-                    if (pricingMode === 'sqft') return `${formatCurrency(targetSellPrice, currency)}/sqft`;
-                    if (pricingMode === 'sqm') return `${formatCurrency(targetSellPrice, currency)}/sqm`;
-                    return ''; // screen or margin mode — already shown in Amount (1 Screen)
-                })();
+                const ledRateLabel = pricingMode === 'sqft'
+                    ? `${formatCurrency(targetSellPrice, currency)}/sqft`
+                    : (pricingMode === 'sqm'
+                        ? `${formatCurrency(targetSellPrice, currency)}/sqm`
+                        : `${formatCurrency(sellLEDFinal / areaSqft, currency)}/sqft`);
 
                 const procRateLabel = ''; // always per unit/screen — Amount (1 Screen) shows it
 
@@ -189,19 +189,12 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                                     <span className="font-semibold text-slate-500">Brightness:</span> <span className="col-span-2 font-bold text-blue-700">{moduleType.brightness} nits</span>
                                     <span className="font-semibold text-slate-500">Refresh Rate:</span> <span className="col-span-2 font-bold text-blue-700">{moduleType.refreshRate} Hz</span>
                                     <span className="font-semibold text-slate-500">Contrast:</span> <span className="col-span-2">{moduleType.contrast || '-'}</span>
-                                    <span className="font-semibold text-slate-500">Controller:</span> <span className="col-span-2">{processor ? `${processor.brand} ${processor.model}` : 'Standard'}</span>
                                     <span className="font-semibold text-slate-500">Viewing:</span> <span className="col-span-2">H: {moduleType.viewAngleH}° / V: {moduleType.viewAngleV}°</span>
                                     <span className="font-semibold text-slate-500 text-[10px]">IP Rating:</span> <span className="col-span-2 font-bold text-blue-700">Front: IP{moduleType.ipFront} / Back: IP{moduleType.ipBack}</span>
                                     {moduleType.maintenance && (
                                         <>
                                             <span className="font-semibold text-slate-500">Maintenance:</span>
                                             <span className="col-span-2">{moduleType.maintenance}</span>
-                                        </>
-                                    )}
-                                    {finalWarranty !== undefined && (
-                                        <>
-                                            <span className="font-semibold text-slate-500">Warranty:</span> 
-                                            <span className="col-span-2 font-bold text-blue-700">{finalWarranty} Year{finalWarranty !== 1 ? 's' : ''}</span>
                                         </>
                                     )}
                                 </div>
@@ -277,15 +270,47 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
                         <div className="font-bold text-slate-800 uppercase">GST</div>
                         <div className="whitespace-pre-wrap">Extra as applicable (currently {CONFIG.DEFAULTS.GST_RATE}%)</div>
                         <div className="font-bold text-slate-800 uppercase tracking-widest">WARRANTY</div>
-                        <div className="text-justify leading-snug whitespace-pre-wrap">{terms.warranty || CONFIG.TEXT.WARRANTY}</div>
+                        <div className="text-justify leading-snug whitespace-pre-wrap">
+                            {(() => {
+                                let w = terms.warranty || CONFIG.TEXT.WARRANTY;
+                                if (w.includes("Against any manufacturing defect") && !w.includes("\n")) {
+                                    w = CONFIG.TEXT.WARRANTY;
+                                }
+                                return w;
+                            })()}
+                        </div>
                     </div>
                 </div>
 
                 <h3 className="font-bold text-slate-700 uppercase border-b border-slate-300 mt-4 mb-2 pb-1 tracking-widest">Client's Scope</h3>
                 <div className="text-[10px] text-slate-600 grid gap-y-3">
-                    {terms.scope?.structure && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Structure:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.structure}</div></div>}
-                    {terms.scope?.elec && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Electricity:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.elec}</div></div>}
-                    {terms.scope?.net && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Internet:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.net}</div></div>}
+                    {terms.scope?.structure && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Structure:</span><div className="whitespace-pre-wrap leading-relaxed">
+                        {(() => {
+                            let s = terms.scope.structure;
+                            if (s.includes("Foundation & Structure") && !s.includes("\n")) {
+                                s = CONFIG.TEXT.SCOPE_STRUCTURE;
+                            }
+                            return s;
+                        })()}
+                    </div></div>}
+                    {terms.scope?.elec && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Electricity:</span><div className="whitespace-pre-wrap leading-relaxed">
+                        {(() => {
+                            let e = terms.scope.elec;
+                            if (e.includes("Electricity 3 phase") && !e.includes("\n")) {
+                                e = CONFIG.TEXT.SCOPE_ELEC;
+                            }
+                            return e;
+                        })()}
+                    </div></div>}
+                    {terms.scope?.net && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Internet:</span><div className="whitespace-pre-wrap leading-relaxed">
+                        {(() => {
+                            let n = terms.scope.net;
+                            if (n.includes("CAT 6 or Optic Fiber") && !n.includes("\n")) {
+                                n = CONFIG.TEXT.SCOPE_NET;
+                            }
+                            return n;
+                        })()}
+                    </div></div>}
                     {terms.scope?.soft && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Software:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.soft}</div></div>}
                     {terms.scope?.perm && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Permissions:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.perm}</div></div>}
                     {terms.scope?.pc && <div><span className="font-bold text-slate-800 block uppercase mb-0.5">Computer:</span><div className="whitespace-pre-wrap leading-relaxed">{terms.scope.pc}</div></div>}

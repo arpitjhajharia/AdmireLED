@@ -318,6 +318,22 @@ const App = () => {
       scope: { ...initialCalcState.terms.scope, ...(quote.calculatorState.terms?.scope || {}) }
     };
 
+    if (newState.terms.warranty && newState.terms.warranty.includes("Against any manufacturing defect") && !newState.terms.warranty.includes("\n")) {
+      newState.terms.warranty = CONFIG.TEXT.WARRANTY;
+    }
+
+    if (newState.terms.scope?.structure && newState.terms.scope.structure.includes("Foundation & Structure") && !newState.terms.scope.structure.includes("\n")) {
+      newState.terms.scope.structure = CONFIG.TEXT.SCOPE_STRUCTURE;
+    }
+
+    if (newState.terms.scope?.elec && newState.terms.scope.elec.includes("Electricity 3 phase") && !newState.terms.scope.elec.includes("\n")) {
+      newState.terms.scope.elec = CONFIG.TEXT.SCOPE_ELEC;
+    }
+
+    if (newState.terms.scope?.net && newState.terms.scope.net.includes("CAT 6 or Optic Fiber") && !newState.terms.scope.net.includes("\n")) {
+      newState.terms.scope.net = CONFIG.TEXT.SCOPE_NET;
+    }
+
     if (isDuplicate) {
       newState.client = newState.client + ' (Copy)';
       newState.project = newState.project + ' (Copy)';

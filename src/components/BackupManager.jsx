@@ -55,19 +55,43 @@ const BackupManager = () => {
         };
     };
 
-    // Helper: Save Backup Payload
+    // Helper: Save Backup Payload (Now handles Large Payloads via Chunking)
     const saveBackupToFirestore = async (payload, isSafety = false) => {
         const timestampId = payload.timestamp.replace(/[:.]/g, '-');
         const docId = isSafety ? `SAFETY-${timestampId}` : timestampId;
 
-        const backupRef = db.collection('artifacts').doc(appId).collection('private').doc('system').collection('backups').doc(docId);
+        const baseRef = db.collection('artifacts').doc(appId).collection('private').doc('system').collection('backups');
+        const backupRef = baseRef.doc(docId);
 
+        const dataStr = JSON.stringify(payload.data);
+        
+        // Chunking Logic (Firestore limit is 1MB total doc, so we split at ~800KB)
+        const CHUNK_SIZE = 800000;
+        const chunks = [];
+        for (let i = 0; i < dataStr.length; i += CHUNK_SIZE) {
+            chunks.push(dataStr.substring(i, i + CHUNK_SIZE));
+        }
+
+        // 1. Save Main Doc (Metadata Only)
         await backupRef.set({
             timestamp: payload.timestamp,
             stats: payload.stats,
             isSafetySnapshot: isSafety,
-            payload: JSON.stringify(payload.data)
+            hasChunks: true, // Marker for new format
+            chunkCount: chunks.length
         });
+
+        // 2. Save Chunks to sub-collection
+        const batchSize = 20; // Small batches for chunks
+        for (let i = 0; i < chunks.length; i += batchSize) {
+            const batch = db.batch();
+            const slice = chunks.slice(i, i + batchSize);
+            slice.forEach((chunkData, index) => {
+                const chunkRef = backupRef.collection('chunks').doc((i + index).toString().padStart(3, '0'));
+                batch.set(chunkRef, { data: chunkData, index: i + index });
+            });
+            await batch.commit();
+        }
     };
 
     // Action: Create Manual Snapshot
@@ -106,8 +130,19 @@ const BackupManager = () => {
                 await saveBackupToFirestore(currentData, true);
             }
 
-            // 2. Perform Restore
-            const data = JSON.parse(backup.payload);
+            // 2. Perform Restore (Supports both legacy and chunked formats)
+            let payloadString = backup.payload;
+            
+            if (!payloadString) {
+                console.log("Fetching backup chunks...");
+                const backupRef = db.collection('artifacts').doc(appId).collection('private').doc('system').collection('backups').doc(backup.id);
+                const chunksSnap = await backupRef.collection('chunks').orderBy('index').get();
+                payloadString = chunksSnap.docs.map(d => d.data().data).join('');
+            }
+
+            if (!payloadString) throw new Error("Backup data is empty or missing.");
+
+            const data = JSON.parse(payloadString);
             const baseRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
 
             // Helper to batch write chunks (500 limit)
@@ -140,19 +175,33 @@ const BackupManager = () => {
         }
     };
 
-    // Helper: Delete backups older than 30 days
+    // Helper: Delete backups older than 30 days (Now cleans up chunks too)
     const cleanupOldBackups = async () => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const oldBackups = await db.collection('artifacts').doc(appId).collection('private').doc('system').collection('backups')
+        const oldBackupsSnap = await db.collection('artifacts').doc(appId).collection('private').doc('system').collection('backups')
             .where('timestamp', '<', thirtyDaysAgo.toISOString())
             .get();
 
-        const batch = db.batch();
-        oldBackups.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        if (!oldBackups.empty) console.log(`Cleaned up ${oldBackups.size} old backups.`);
+        if (oldBackupsSnap.empty) return;
+
+        for (const doc of oldBackupsSnap.docs) {
+            try {
+                // 1. Delete chunks sub-collection
+                const chunksSnap = await doc.ref.collection('chunks').get();
+                if (!chunksSnap.empty) {
+                    const chunkBatch = db.batch();
+                    chunksSnap.forEach(c => chunkBatch.delete(c.ref));
+                    await chunkBatch.commit();
+                }
+                // 2. Delete main doc
+                await doc.ref.delete();
+            } catch (err) {
+                console.warn(`Failed to delete backup ${doc.id}:`, err);
+            }
+        }
+        console.log(`Cleaned up ${oldBackupsSnap.size} old backups.`);
     };
 
     // Status Logic

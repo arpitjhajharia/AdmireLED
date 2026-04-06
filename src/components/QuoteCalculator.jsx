@@ -1416,6 +1416,12 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                                     {allScreensTotal ? formatCurrency(allScreensTotal.totalServicesSell, 'INR') : '-'}
                                                 </span>
                                             </div>
+                                            <div className="flex justify-between items-end pt-1 mt-1 border-t border-dashed border-slate-100 dark:border-slate-700">
+                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Rate / Sq.Ft (Total)</span>
+                                                <span className="font-bold text-slate-500 dark:text-slate-400">
+                                                    {allScreensTotal && (allScreensTotal.totalProjectSell / allScreensTotal.calculations.reduce((acc, c) => acc + c.matrix.sqft.total, 0)) ? formatCurrency(allScreensTotal.totalProjectSell / allScreensTotal.calculations.reduce((acc, c) => acc + c.matrix.sqft.total, 0), 'INR') : '-'}
+                                                </span>
+                                            </div>
                                             <details className="group">
                                                 <summary className="text-[10px] text-teal-600 dark:text-teal-400 font-bold uppercase cursor-pointer hover:underline">
                                                     View Screen Breakdown
@@ -1433,6 +1439,10 @@ const QuoteCalculator = ({ user, userRole, inventory, transactions, state, setSt
                                                                 <span className="font-bold text-slate-700 dark:text-slate-300">
                                                                     {formatCurrency(calc.totalProjectSell, 'INR')}
                                                                 </span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-[10px]">
+                                                                <span className="text-slate-400">Rate / Sq.Ft</span>
+                                                                <span className="text-slate-500 font-medium">{formatCurrency(calc.matrix.sell.sqft, 'INR')}</span>
                                                             </div>
                                                         </div>
                                                     ))}

@@ -247,6 +247,17 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     const [viewQuote, setViewQuote] = React.useState(null);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [expandedGroups, setExpandedGroups] = React.useState(new Set());
+    const [allQuoteImages, setAllQuoteImages] = React.useState([]);
+
+    React.useEffect(() => {
+        if (!user || !db) return;
+        const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('quote_images')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snap => {
+                setAllQuoteImages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            }, err => console.error('quote_images fetch error:', err));
+        return () => unsub();
+    }, [user]);
 
     const toggleGroup = (ref) => {
         const next = new Set(expandedGroups);
@@ -320,11 +331,17 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
     const handleView = (quote) => {
         let dataToView = null;
 
+        const refImageIds = quote.calculatorState?.refImages || [];
+        const resolvedRefImages = refImageIds
+            .map(id => allQuoteImages.find(img => img.id === id))
+            .filter(Boolean);
+
         if (quote.allScreensData) {
             dataToView = {
                 allScreensData: quote.allScreensData,
                 client: quote.client,
-                project: quote.project
+                project: quote.project,
+                refImages: resolvedRefImages
             };
         } else {
             const state = quote.calculatorState;
@@ -350,13 +367,14 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                     dataToView = {
                         allScreensData: calculatedData,
                         client: quote.client,
-                        project: quote.project
+                        project: quote.project,
+                        refImages: resolvedRefImages
                     };
                 }
             } else {
                 const result = calculateBOM(state, inventory, transactions, exchangeRate);
                 if (result) {
-                    dataToView = { data: result, client: quote.client, project: quote.project };
+                    dataToView = { data: result, client: quote.client, project: quote.project, refImages: resolvedRefImages };
                 }
             }
         }
@@ -481,6 +499,7 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
                                     allScreensData={viewQuote.allScreensData ? { ...viewQuote.allScreensData, clientName: viewQuote.client, projectName: viewQuote.project } : null}
                                     currency='INR'
                                     exchangeRate={exchangeRate}
+                                    refImages={viewQuote.refImages || []}
                                 />
                             )}
                         </div>
