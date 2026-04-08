@@ -15,26 +15,36 @@ const calculateSignageBOM = (screen, inventory) => {
     const visualHeightMm = Number(screen.height) * conv;
     const visualAreaSqFt = (visualWidthMm * visualHeightMm) / (304.8 * 304.8);
 
+    const overrides = screen.overrides || {};
     let totalMaterialCost = 0;
     const bom = [];
 
-    // A. Profiles (array — each entry has profileId, wMult, hMult)
+    // Helper to apply override
+    const getQty = (id, calculatedQty) => {
+        if (overrides[id]?.qty !== undefined && overrides[id]?.qty !== '') return Number(overrides[id]?.qty);
+        return calculatedQty;
+    };
+
+    // A. Profiles
     (Array.isArray(screen.profiles) ? screen.profiles : []).forEach(p => {
         const profItem = inventory.find(i => i.id === p.profileId);
         if (!profItem) return;
-        const lengthM = (Number(p.wMult) * visualWidthMm + Number(p.hMult) * visualHeightMm) / 1000;
+        const calcLengthM = (Number(p.wMult) * visualWidthMm + Number(p.hMult) * visualHeightMm) / 1000;
+        const lengthM = getQty(`profile-${p.id}`, calcLengthM);
         if (lengthM <= 0) return;
         const rate = Number(profItem.weightPerMeter) * Number(profItem.ratePerKg);
         const cost = lengthM * rate;
         totalMaterialCost += cost;
         bom.push({
+            id: `profile-${p.id}`,
             category: 'Profile',
             name: `${profItem.brand} ${profItem.model}`,
             specs: `W×${p.wMult} + H×${p.hMult}`,
             qty: lengthM,
             uom: 'm',
             rate,
-            cost
+            cost,
+            isOverridden: overrides[`profile-${p.id}`]?.qty !== undefined
         });
     });
 
@@ -42,32 +52,53 @@ const calculateSignageBOM = (screen, inventory) => {
     const acpSheet = inventory.find(i => i.id === screen.acpId);
     if (acpSheet) {
         const rate = Number(acpSheet.ratePerSqft);
-        const cost = visualAreaSqFt * rate;
+        const qty = getQty('backing', visualAreaSqFt);
+        const cost = qty * rate;
         totalMaterialCost += cost;
-        bom.push({ category: 'Backing', name: 'ACP Sheet', specs: `${acpSheet.brand} ${acpSheet.model} ${acpSheet.acpThickness}`, qty: visualAreaSqFt, uom: 'Sq.Ft', rate, cost });
+        bom.push({
+            id: 'backing',
+            category: 'Backing',
+            name: 'ACP Sheet',
+            specs: `${acpSheet.brand} ${acpSheet.model} ${acpSheet.acpThickness}`,
+            qty,
+            uom: 'Sq.Ft',
+            rate,
+            cost,
+            isOverridden: overrides['backing']?.qty !== undefined
+        });
     }
 
     // C. LED
     let ledWattage = 0;
     const ledItem = inventory.find(i => i.id === screen.led.id);
     if (ledItem) {
-        let qty = 0;
+        let calcQty = 0;
         if (screen.led.type === 'Module') {
-            qty = Math.ceil(visualAreaSqFt * Number(screen.led.density));
+            calcQty = Math.ceil(visualAreaSqFt * Number(screen.led.density));
         } else {
             const longerEdgeMm = Math.max(visualWidthMm, visualHeightMm);
             const spacing = Number(screen.led.spacing) || 100;
-            qty = Math.ceil(longerEdgeMm / spacing) + 1;
+            calcQty = Math.ceil(longerEdgeMm / spacing) + 1;
         }
+        const qty = getQty('led', calcQty);
         ledWattage = qty * ledItem.wattagePerUnit;
         const rate = Number(ledItem.price);
         const cost = qty * rate;
         totalMaterialCost += cost;
-        bom.push({ category: 'Electrical', name: `LED ${screen.led.type}`, specs: `${ledItem.brand} ${ledItem.model}`, qty, uom: screen.led.type === 'Module' ? 'Pcs' : 'Lines', rate, cost });
+        bom.push({
+            id: 'led',
+            category: 'Electrical',
+            name: `LED ${screen.led.type}`,
+            specs: `${ledItem.brand} ${ledItem.model}`,
+            qty,
+            uom: screen.led.type === 'Module' ? 'Pcs' : 'Lines',
+            rate,
+            cost,
+            isOverridden: overrides['led']?.qty !== undefined
+        });
     }
 
-    // D. SMPS — multi-select with DP minimum-cost optimiser
-    // Normalise: prefer smpsIds array; fall back to legacy single smpsId
+    // D. SMPS
     const activeSmpsIds = Array.isArray(screen.smpsIds) && screen.smpsIds.length > 0
         ? screen.smpsIds
         : (screen.smpsId ? [screen.smpsId] : []);
@@ -82,7 +113,6 @@ const calculateSignageBOM = (screen, inventory) => {
     let smpsMix = [];
 
     if (smpsOptions.length > 0 && bufferedWattage > 0) {
-        // Unbounded-knapsack DP: find minimum-cost combination that covers bufferedWattage
         const reqW = Math.ceil(bufferedWattage);
         const maxCap = Math.max(...smpsOptions.map(o => o.capacity));
         const maxW = reqW + maxCap;
@@ -114,13 +144,20 @@ const calculateSignageBOM = (screen, inventory) => {
         }
 
         smpsMix.forEach((s, idx) => {
-            const cost = s.count * s.price;
+            const comboId = `smps-${s.id}`;
+            const qty = getQty(comboId, s.count);
+            const cost = qty * s.price;
             totalMaterialCost += cost;
             bom.push({
+                id: comboId,
                 category: 'Electrical',
                 name: idx === 0 ? 'Power Supply' : 'Power Supply (mix)',
                 specs: `${s.brand} ${s.capacity}W ${s.environment}`,
-                qty: s.count, uom: 'Pcs', rate: s.price, cost
+                qty,
+                uom: 'Pcs',
+                rate: s.price,
+                cost,
+                isOverridden: overrides[comboId]?.qty !== undefined
             });
         });
     }
@@ -130,51 +167,74 @@ const calculateSignageBOM = (screen, inventory) => {
         const item = inventory.find(i => i.id === hw.hardwareId);
         if (item) {
             const rate = Number(item.price);
-            const cost = Number(hw.qty) * rate;
+            const qty = getQty(`hw-${hw.id}`, Number(hw.qty));
+            const cost = qty * rate;
             totalMaterialCost += cost;
-            bom.push({ category: 'Hardware', name: `${item.brand} ${item.model}`, specs: item.uom, qty: Number(hw.qty), uom: item.uom, rate, cost });
+            bom.push({
+                id: `hw-${hw.id}`,
+                category: 'Hardware',
+                name: `${item.brand} ${item.model}`,
+                specs: item.uom,
+                qty,
+                uom: item.uom,
+                rate,
+                cost,
+                isOverridden: overrides[`hw-${hw.id}`]?.qty !== undefined
+            });
         }
     });
 
-    // F. Other Costs (user-defined)
+    // F. Other Costs
     let otherCostTotal = 0;
     (screen.otherCosts || []).forEach(oc => {
         if (!oc.name || !Number(oc.rate)) return;
         const rate = Number(oc.rate);
-        let qty, uom, cost;
-        if (oc.qtyType === 'Per Sq.Ft') {
-            qty = visualAreaSqFt;
-            uom = 'Sq.Ft';
-            cost = rate * visualAreaSqFt;
-        } else {
-            qty = Number(oc.qty) || 1;
-            uom = 'Board';
-            cost = rate * qty;
-        }
+        let calcQty;
+        if (oc.qtyType === 'Per Sq.Ft') calcQty = visualAreaSqFt;
+        else calcQty = Number(oc.qty) || 1;
+        
+        const qty = calcQty;
+        const uom = oc.qtyType === 'Per Sq.Ft' ? 'Sq.Ft' : 'Board';
+        const cost = rate * qty;
         totalMaterialCost += cost;
         otherCostTotal += cost;
-        bom.push({ category: 'Other', name: oc.name, specs: oc.qtyType, qty, uom, rate, cost });
+        bom.push({
+            id: `oc-${oc.id}`,
+            category: 'Other',
+            name: oc.name,
+            specs: oc.qtyType,
+            qty,
+            uom,
+            rate,
+            cost
+        });
     });
 
     // G. Labour
-    let labourCost = 0;
-    if (screen.labour.method === 'Lumpsum') labourCost = Number(screen.labour.rate);
-    else if (screen.labour.method === 'Per Sq.Ft') labourCost = visualAreaSqFt * Number(screen.labour.rate);
+    let calcLabourCost = 0;
+    const isLabPerSqft = screen.labour.method === 'Per Sq.Ft';
+    if (screen.labour.method === 'Per Board') calcLabourCost = Number(screen.labour.rate);
+    else if (isLabPerSqft) calcLabourCost = visualAreaSqFt * Number(screen.labour.rate);
+    
+    const labQty = isLabPerSqft ? visualAreaSqFt : 1;
+    const labRate = Number(screen.labour.rate);
+    const labourCost = labQty * labRate;
     const baseCost = totalMaterialCost + labourCost;
+
     if (labourCost > 0) {
-        const isPerSqft = screen.labour.method === 'Per Sq.Ft';
         bom.push({
+            id: 'labour',
             category: 'Labour',
             name: 'Manufacturing Labour',
             specs: screen.labour.method,
-            qty: isPerSqft ? visualAreaSqFt : 1,
-            uom: isPerSqft ? 'Sq.Ft' : 'LS',
-            rate: isPerSqft ? Number(screen.labour.rate) : labourCost,
+            qty: labQty,
+            uom: isLabPerSqft ? 'Sq.Ft' : 'LS',
+            rate: labRate,
             cost: labourCost
         });
     }
 
-    // G. Logistics
+    // H. Logistics
     let logisticsCost = 0;
     const logisticsDefs = [
         { key: 'trans',   label: 'Transport' },
@@ -183,18 +243,22 @@ const calculateSignageBOM = (screen, inventory) => {
     logisticsDefs.forEach(({ key, label }) => {
         const method = screen.logistics[`${key}Method`];
         const rateVal = Number(screen.logistics[`${key}Rate`]);
-        let cost = 0;
-        if (method === 'Lumpsum') cost = rateVal;
-        else if (method === 'Percentage') cost = baseCost * (rateVal / 100);
+        let calcCost = 0;
+        if (method === 'Per Board') calcCost = rateVal;
+        else if (method === 'Percentage') calcCost = baseCost * (rateVal / 100);
+        
+        const qty = 1;
+        const cost = qty * calcCost;
         logisticsCost += cost;
         if (cost > 0) {
             bom.push({
+                id: key,
                 category: 'Logistics',
                 name: label,
-                specs: method === 'Percentage' ? `${rateVal}% of base` : 'Lumpsum',
-                qty: 1,
+                specs: method === 'Percentage' ? `${rateVal}% of base` : 'Per Board',
+                qty,
                 uom: 'LS',
-                rate: cost,
+                rate: cost / qty,
                 cost
             });
         }
@@ -204,7 +268,7 @@ const calculateSignageBOM = (screen, inventory) => {
     const screenQty = Number(screen.screenQty) || 1;
     const totalCostWithQty = totalCostEstimate * screenQty;
 
-    // H. Selling Price
+    // I. Selling Price
     const pVal = Number(screen.pricing?.value) || 0;
     const pMode = screen.pricing?.mode || 'Margin';
     let finalSellPricePerScreen = 0;
@@ -248,9 +312,10 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
         smpsIds: [],
         hardware: [],
         otherCosts: [],
-        labour: { complexity: 'Standard', method: 'Lumpsum', rate: 0 },
-        logistics: { transMethod: 'Lumpsum', transRate: 0, installMethod: 'Lumpsum', installRate: 0 },
-        pricing: { mode: 'Margin', value: 10 }
+        labour: { complexity: 'Standard', method: 'Per Board', rate: 0 },
+        logistics: { transMethod: 'Per Board', transRate: 0, installMethod: 'Per Board', installRate: 0 },
+        pricing: { mode: 'Margin', value: 10 },
+        overrides: {}
     });
 
     const initialState = {
@@ -335,8 +400,8 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                     smpsIds: Array.isArray(loadedState.smpsIds) ? loadedState.smpsIds : (loadedState.smpsId ? [loadedState.smpsId] : []),
                     hardware: loadedState.hardware || [],
                     otherCosts: loadedState.otherCosts || [],
-                    labour: loadedState.labour || { complexity: 'Standard', method: 'Lumpsum', rate: 0 },
-                    logistics: loadedState.logistics || { transMethod: 'Lumpsum', transRate: 0, installMethod: 'Lumpsum', installRate: 0 },
+                    labour: loadedState.labour || { complexity: 'Standard', method: 'Per Board', rate: 0 },
+                    logistics: loadedState.logistics || { transMethod: 'Per Board', transRate: 0, installMethod: 'Per Board', installRate: 0 },
                     pricing: loadedState.pricing || { mode: 'Margin', value: 10 }
                 }],
                 activeScreenIndex: 0
@@ -350,7 +415,8 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                     ...s,
                     profiles: migrateProfiles(s.profiles),
                     smpsIds: Array.isArray(s.smpsIds) ? s.smpsIds : (s.smpsId ? [s.smpsId] : []),
-                    otherCosts: Array.isArray(s.otherCosts) ? s.otherCosts : []
+                    otherCosts: Array.isArray(s.otherCosts) ? s.otherCosts : [],
+                    overrides: s.overrides || {}
                 }))
             });
         }
@@ -402,6 +468,14 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
             screens: [...prev.screens, createDefaultScreen(`Board ${n}`)],
             activeScreenIndex: prev.screens.length
         }));
+    };
+
+    const updateOverride = (id, val) => {
+        const scr = state.screens[state.activeScreenIndex];
+        const newOverrides = { ...(scr.overrides || {}) };
+        if (val === '' || val === null) delete newOverrides[id];
+        else newOverrides[id] = { qty: val };
+        updateScreenProp(state.activeScreenIndex, 'overrides', newOverrides);
     };
 
     const removeScreen = (idx) => {
@@ -646,16 +720,37 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                     const fmtQ = (v, uom) => v != null ? `${typeof v === 'number' ? v.toFixed(2) : v} ${uom}` : dash;
                     const fmtA = v => v != null ? formatCurrency(v, 'INR', false, true) : dash;
 
-                    const renderDataRow = (key, componentCell, bomRow, overrideAmt) => {
+                    const renderDataRow = (id, componentCell, bomRow, overrideAmt, allowOverride = true) => {
                         const rate = bomRow?.rate;
                         const qty  = bomRow?.qty;
                         const uom  = bomRow?.uom ?? '';
                         const amt  = overrideAmt ?? bomRow?.cost;
+                        const isOv = bomRow?.isOverridden;
+
                         return (
-                            <tr key={key} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 border-t border-slate-100 dark:border-slate-700/50">
+                            <tr key={id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 border-t border-slate-100 dark:border-slate-700/50 ${isOv ? 'bg-amber-50/30' : ''}`}>
                                 <td className={cellCls + " w-1/2"}>{componentCell}</td>
                                 <td className={numCls}>{fmtR(rate, uom)}</td>
-                                <td className={numCls}>{fmtQ(qty, uom)}</td>
+                                <td className={numCls}>
+                                    {allowOverride ? (
+                                        <div className="flex items-center justify-end gap-1">
+                                            <input
+                                                type="number"
+                                                className={`w-16 p-0.5 text-right bg-transparent border-b border-dashed focus:outline-none transition-colors ${isOv ? 'border-amber-400 text-amber-700 font-bold' : 'border-slate-200 text-slate-500'}`}
+                                                value={qty ?? ''}
+                                                onChange={e => updateOverride(id, e.target.value)}
+                                            />
+                                            <span className="text-[9px] text-slate-400 w-4">{uom}</span>
+                                            {isOv && (
+                                                <button onClick={() => updateOverride(id, '')} className="text-amber-500 hover:text-amber-700" title="Reset to auto">
+                                                    <X size={10} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        fmtQ(qty, uom)
+                                    )}
+                                </td>
                                 <td className={amtCls}>{fmtA(amt)}</td>
                                 {sq > 1 && <td className={numCls + " border-l border-slate-100 dark:border-slate-700"}>{qty != null ? `${(qty * sq).toFixed(2)} ${uom}` : dash}</td>}
                                 {sq > 1 && <td className={amtCls}>{amt != null ? fmtA(amt * sq) : dash}</td>}
@@ -717,7 +812,7 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                                                 state.activeScreenIndex, 'profiles',
                                                 activeScreen.profiles.map((pr, i) => i === pIdx ? { ...pr, [field]: val } : pr)
                                             );
-                                            return renderDataRow(`prof-${p.id}`, (
+                                            return renderDataRow(`profile-${p.id}`, (
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                     <select
                                                         className="flex-1 min-w-32 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -835,7 +930,7 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                                         {/* SMPS — Individual mix rows with per-unit Rate / Qty / Amt */}
                                         {smpsBomRows.length > 0
                                             ? smpsBomRows.map((bomRow, idx) =>
-                                                renderDataRow(`smps-mix-${idx}`, (
+                                                renderDataRow(bomRow.id, (
                                                     <div className="pl-3 flex items-center gap-2">
                                                         <Zap size={11} className="text-pink-400 shrink-0" />
                                                         <span className="font-medium text-slate-700 dark:text-slate-200">{bomRow.specs}</span>
@@ -900,7 +995,7 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                                                     />
                                                     <button onClick={() => removeOtherCost(ocIdx)} className="p-0.5 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
                                                 </div>
-                                            ), otherBomRows[ocIdx])
+                                            ), otherBomRows[ocIdx], null, false)
                                         ))}
 
                                         {/* ── LABOUR ── */}
@@ -909,34 +1004,34 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-[10px] text-slate-500 whitespace-nowrap">Labour</span>
                                                 <select className="w-32 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={activeScreen.labour.method} onChange={e => updateScreenNested(state.activeScreenIndex, 'labour', 'method', e.target.value)}>
-                                                    <option value="Lumpsum">Lumpsum</option>
+                                                    <option value="Per Board">Per Board</option>
                                                     <option value="Per Sq.Ft">Per Sq.Ft</option>
                                                 </select>
                                                 <input type="number" className="w-24 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right" value={activeScreen.labour.rate} onChange={e => updateScreenNested(state.activeScreenIndex, 'labour', 'rate', e.target.value)} placeholder="0" />
                                             </div>
-                                        ), labourBom)}
+                                        ), labourBom, null, false)}
 
-                                        {renderDataRow('transport', (
+                                        {renderDataRow('trans', (
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-[10px] text-slate-500 whitespace-nowrap">Transport</span>
                                                 <select className="w-32 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={activeScreen.logistics.transMethod} onChange={e => updateScreenNested(state.activeScreenIndex, 'logistics', 'transMethod', e.target.value)}>
-                                                    <option value="Lumpsum">Lumpsum</option>
+                                                    <option value="Per Board">Per Board</option>
                                                     <option value="Percentage">% of Base</option>
                                                 </select>
                                                 <input type="number" className="w-24 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right" value={activeScreen.logistics.transRate} onChange={e => updateScreenNested(state.activeScreenIndex, 'logistics', 'transRate', e.target.value)} placeholder="0" />
                                             </div>
-                                        ), transBom)}
+                                        ), transBom, null, false)}
 
                                         {renderDataRow('install', (
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-[10px] text-slate-500 whitespace-nowrap">Installation</span>
                                                 <select className="w-32 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={activeScreen.logistics.installMethod} onChange={e => updateScreenNested(state.activeScreenIndex, 'logistics', 'installMethod', e.target.value)}>
-                                                    <option value="Lumpsum">Lumpsum</option>
+                                                    <option value="Per Board">Per Board</option>
                                                     <option value="Percentage">% of Base</option>
                                                 </select>
                                                 <input type="number" className="w-24 p-1 text-xs border rounded bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white text-right" value={activeScreen.logistics.installRate} onChange={e => updateScreenNested(state.activeScreenIndex, 'logistics', 'installRate', e.target.value)} placeholder="0" />
                                             </div>
-                                        ), installBom)}
+                                        ), installBom, null, false)}
 
                                         {/* ── TOTAL ── */}
                                         <tr className="bg-slate-800 dark:bg-slate-900 text-white font-bold text-xs">
@@ -1063,9 +1158,9 @@ const SignageCalculator = ({ user, userRole, readOnly, loadedState }) => {
                                     <span className={catHeaderCls + " text-pink-600 block mb-1"}>Labour & Logistics</span>
                                     <div className="space-y-1">
                                         {[
-                                            { label: 'Labour', method: activeScreen.labour.method, rate: activeScreen.labour.rate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'labour', 'method', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'labour', 'rate', v), opts: [{v:'Lumpsum',l:'Lumpsum'},{v:'Per Sq.Ft',l:'Per Sq.Ft'}], bom: labourBom },
-                                            { label: 'Transport', method: activeScreen.logistics.transMethod, rate: activeScreen.logistics.transRate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'transMethod', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'transRate', v), opts: [{v:'Lumpsum',l:'Lumpsum'},{v:'Percentage',l:'% of Base'}], bom: transBom },
-                                            { label: 'Installation', method: activeScreen.logistics.installMethod, rate: activeScreen.logistics.installRate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'installMethod', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'installRate', v), opts: [{v:'Lumpsum',l:'Lumpsum'},{v:'Percentage',l:'% of Base'}], bom: installBom }
+                                            { label: 'Labour', method: activeScreen.labour.method, rate: activeScreen.labour.rate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'labour', 'method', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'labour', 'rate', v), opts: [{v:'Per Board',l:'Per Board'},{v:'Per Sq.Ft',l:'Per Sq.Ft'}], bom: labourBom },
+                                            { label: 'Transport', method: activeScreen.logistics.transMethod, rate: activeScreen.logistics.transRate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'transMethod', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'transRate', v), opts: [{v:'Per Board',l:'Per Board'},{v:'Percentage',l:'% of Base'}], bom: transBom },
+                                            { label: 'Installation', method: activeScreen.logistics.installMethod, rate: activeScreen.logistics.installRate, onMethod: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'installMethod', v), onRate: v => updateScreenNested(state.activeScreenIndex, 'logistics', 'installRate', v), opts: [{v:'Per Board',l:'Per Board'},{v:'Percentage',l:'% of Base'}], bom: installBom }
                                         ].map(item => (
                                             <div key={item.label} className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-700/30 rounded p-2">
                                                 <span className="text-[10px] text-slate-500 w-16 shrink-0">{item.label}</span>
