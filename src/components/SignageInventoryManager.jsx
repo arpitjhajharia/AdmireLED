@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Edit, Plus, Trash2, X, Search, Package } from 'lucide-react';
+import { Box, Edit, Plus, Trash2, X, Search, Package, ChevronDown, ChevronRight } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency } from '../lib/utils';
+
+const toMeters = (length, unit) => {
+    if (unit === 'm') return length;
+    if (unit === 'ft') return length * 0.3048;
+    if (unit === 'mm') return length / 1000;
+    return length;
+};
 
 const SignageInventoryManager = ({ user, userRole, readOnly = false, transactions = [] }) => {
     const [items, setItems] = useState([]);
@@ -10,6 +17,13 @@ const SignageInventoryManager = ({ user, userRole, readOnly = false, transaction
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
     const [loading, setLoading] = useState(true);
+    const [expandedItems, setExpandedItems] = useState(new Set());
+
+    const toggleExpand = (id) => setExpandedItems(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+    });
 
     const initialItemState = {
         type: 'profile',
@@ -129,10 +143,64 @@ const SignageInventoryManager = ({ user, userRole, readOnly = false, transaction
         return `₹${val}`;
     };
 
-    const getItemBalance = (itemId) => {
-        return transactions
-            .filter(tx => tx.itemId === itemId)
-            .reduce((acc, tx) => acc + (tx.type === 'in' ? Number(tx.qty) : -Number(tx.qty)), 0);
+    // For non-profiles: returns { pcs, totalLengthM: null, totalCost }
+    // For profiles: returns { pcs, totalLengthM, totalCost } using actual purchase rates
+    const getItemBalance = (item) => {
+        const txs = transactions.filter(tx => tx.itemId === item.id);
+        const pcs = txs.reduce((acc, tx) => acc + (tx.type === 'in' ? Number(tx.qty) : -Number(tx.qty)), 0);
+
+        if (item.type !== 'profile') {
+            return { pcs, totalLengthM: null, totalCost: pcs * getItemRateValue(item) };
+        }
+
+        let totalLengthM = 0, totalCost = 0;
+        txs.forEach(tx => {
+            const sign = tx.type === 'in' ? 1 : -1;
+            const q = Number(tx.qty);
+            const lpp = Number(tx.lengthPerPiece || 0);
+            const unit = tx.lengthUnit || 'ft';
+            if (lpp) {
+                const lm = q * toMeters(lpp, unit);
+                totalLengthM += sign * lm;
+                const rate = Number(tx.purchaseRatePerKg || 0);
+                const wpm = Number(item.weightPerMeter || 0);
+                if (rate && wpm) totalCost += sign * lm * wpm * rate;
+            }
+        });
+        return { pcs, totalLengthM, totalCost };
+    };
+
+    // Per-length stock summary for the expanded profile breakup
+    const getProfileStockBreakdown = (item) => {
+        const txs = transactions.filter(tx => tx.itemId === item.id);
+        const map = {};
+        txs.forEach(tx => {
+            const lpp = Number(tx.lengthPerPiece || 0);
+            if (!lpp) return;
+            const unit = tx.lengthUnit || 'ft';
+            const key = `${lpp}_${unit}`;
+            if (!map[key]) map[key] = { lpp, unit, pcs: 0, totalInKg: 0, totalInCost: 0 };
+            const sign = tx.type === 'in' ? 1 : -1;
+            map[key].pcs += sign * Number(tx.qty);
+            if (tx.type === 'in') {
+                const kg = Number(tx.qty) * toMeters(lpp, unit) * Number(item.weightPerMeter || 0);
+                const rate = Number(tx.purchaseRatePerKg || 0);
+                map[key].totalInKg += kg;
+                map[key].totalInCost += kg * rate;
+            }
+        });
+        return Object.values(map)
+            .filter(l => l.pcs > 0)
+            .map(l => {
+                const wpm = Number(item.weightPerMeter || 0);
+                const wtPerPc = toMeters(l.lpp, l.unit) * wpm;
+                const totalLengthNative = l.pcs * l.lpp;
+                const totalKg = l.pcs * toMeters(l.lpp, l.unit) * wpm;
+                const wAvgRate = l.totalInKg > 0 ? l.totalInCost / l.totalInKg : 0;
+                const value = totalKg * wAvgRate;
+                return { lpp: l.lpp, unit: l.unit, pcs: l.pcs, wtPerPc, totalLengthNative, totalKg, wAvgRate, value };
+            })
+            .sort((a, b) => a.lpp - b.lpp);
     };
 
     return (
@@ -293,42 +361,121 @@ const SignageInventoryManager = ({ user, userRole, readOnly = false, transaction
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredItems.map(item => {
-                                const balance = getItemBalance(item.id);
-                                const rate = getItemRateValue(item);
-                                const stockValue = balance * rate;
+                                const bal = getItemBalance(item);
+                                const isProfile = item.type === 'profile';
+                                const isExpanded = expandedItems.has(item.id);
+                                const profileBreakdown = isProfile && isExpanded ? getProfileStockBreakdown(item) : null;
+                                const colCount = readOnly ? 6 : 7;
 
                                 return (
-                                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className={`inline-block px-2 py-0.5 rounded text-[13px] font-bold uppercase tracking-widest bg-pink-50 text-pink-600 ring-1 ring-pink-200/60 dark:bg-pink-900/40 dark:text-pink-400 dark:ring-pink-700/50`}>
-                                                {item.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">{item.brand} {item.model}</div>
-                                            {item.drawingNumber && <div className="text-[13px] text-slate-400">Drwg: {item.drawingNumber}</div>}
-                                        </td>
-                                        <td className="px-4 py-3 text-[13px] text-slate-600 dark:text-slate-400 min-w-[200px]">
-                                            {formatSpecs(item)}
-                                        </td>
-                                        <td className="px-4 py-3 text-[13px] font-medium text-slate-600 dark:text-slate-300 text-right whitespace-nowrap">
-                                            {formatRate(item)}
-                                        </td>
-                                        <td className="px-4 py-3 text-[13px] font-bold text-slate-800 dark:text-white text-right whitespace-nowrap">
-                                            <span className={balance < 0 ? 'text-red-500' : ''}>{balance}</span>
-                                        </td>
-                                        <td className="px-4 py-3 text-[13px] font-extrabold text-slate-900 dark:text-white text-right whitespace-nowrap">
-                                            {formatCurrency(stockValue, 'INR')}
-                                        </td>
-                                        {!readOnly && (
-                                            <td className="px-4 py-3 whitespace-nowrap text-right text-[13px] font-medium">
-                                                <div className="flex justify-end gap-2">
-                                                    <button onClick={() => handleEdit(item)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"><Edit size={16} /></button>
-                                                    <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><Trash2 size={16} /></button>
+                                    <React.Fragment key={item.id}>
+                                        <tr
+                                            className={`transition-colors ${isProfile ? 'cursor-pointer' : ''} hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isExpanded ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : ''}`}
+                                            onClick={isProfile ? () => toggleExpand(item.id) : undefined}
+                                        >
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <div className="flex items-center gap-1.5">
+                                                    {isProfile && (
+                                                        <span className="text-slate-400 dark:text-slate-500">
+                                                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                        </span>
+                                                    )}
+                                                    <span className={`inline-block px-2 py-0.5 rounded text-[13px] font-bold uppercase tracking-widest bg-pink-50 text-pink-600 ring-1 ring-pink-200/60 dark:bg-pink-900/40 dark:text-pink-400 dark:ring-pink-700/50`}>
+                                                        {item.type}
+                                                    </span>
                                                 </div>
                                             </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">{item.brand} {item.model}</div>
+                                                {item.drawingNumber && <div className="text-[13px] text-slate-400">Drwg: {item.drawingNumber}</div>}
+                                            </td>
+                                            <td className="px-4 py-3 text-[13px] text-slate-600 dark:text-slate-400 min-w-[200px]">
+                                                {formatSpecs(item)}
+                                            </td>
+                                            <td className="px-4 py-3 text-[13px] font-medium text-slate-600 dark:text-slate-300 text-right whitespace-nowrap">
+                                                {formatRate(item)}
+                                            </td>
+                                            <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                <span className={`text-[13px] font-bold tabular-nums ${bal.pcs < 0 ? 'text-red-500' : 'text-slate-800 dark:text-white'}`}>
+                                                    {bal.pcs} pcs
+                                                </span>
+                                                {isProfile && bal.totalLengthM > 0 && (
+                                                    <div className="text-[11px] text-indigo-500 dark:text-indigo-400 font-medium leading-tight mt-0.5">
+                                                        {bal.totalLengthM.toFixed(2)} m
+                                                        {item.weightPerMeter > 0 && (
+                                                            <span className="ml-1">· {(bal.totalLengthM * Number(item.weightPerMeter)).toFixed(2)} kg</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-[13px] font-extrabold text-slate-900 dark:text-white text-right whitespace-nowrap">
+                                                {isProfile
+                                                    ? (bal.totalCost > 0 ? formatCurrency(bal.totalCost, 'INR') : <span className="text-slate-400 font-normal text-[12px]">No rate data</span>)
+                                                    : formatCurrency(bal.totalCost, 'INR')
+                                                }
+                                            </td>
+                                            {!readOnly && (
+                                                <td className="px-4 py-3 whitespace-nowrap text-right text-[13px] font-medium" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={() => handleEdit(item)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"><Edit size={16} /></button>
+                                                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><Trash2 size={16} /></button>
+                                                    </div>
+                                                </td>
+                                            )}
+                                        </tr>
+
+                                        {/* Collapsible stock breakup for profiles */}
+                                        {isProfile && isExpanded && (
+                                            <tr>
+                                                <td colSpan={colCount} className="p-0 bg-indigo-50/60 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-800/40">
+                                                    <div className="px-6 py-3">
+                                                        {!profileBreakdown || profileBreakdown.length === 0 ? (
+                                                            <p className="text-[12px] text-slate-400 italic">No length-tracked stock available.</p>
+                                                        ) : (
+                                                            <table className="w-full border-collapse text-[12px]">
+                                                                <thead>
+                                                                    <tr className="border-b border-indigo-200/60 dark:border-indigo-700/40">
+                                                                        <th className="pb-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-indigo-400">Length each (Wt)</th>
+                                                                        <th className="pb-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-indigo-400">Pcs</th>
+                                                                        <th className="pb-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-indigo-400">Total Length (Total Wt)</th>
+                                                                        <th className="pb-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-indigo-400">Wtd Avg Rate</th>
+                                                                        <th className="pb-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-indigo-400">Value</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {profileBreakdown.map(row => (
+                                                                        <tr key={`${row.lpp}_${row.unit}`} className="border-b border-indigo-100/40 dark:border-indigo-800/20 last:border-0">
+                                                                            <td className="py-1.5 text-slate-700 dark:text-slate-300 font-medium tabular-nums">
+                                                                                {row.lpp} {row.unit}
+                                                                                {row.wtPerPc > 0 && (
+                                                                                    <span className="ml-1.5 text-[10px] text-slate-400">({row.wtPerPc.toFixed(3)} kg/pc)</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right font-bold tabular-nums text-slate-800 dark:text-white">
+                                                                                {row.pcs}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                                                                                {row.totalLengthNative.toFixed(1)} {row.unit}
+                                                                                {row.totalKg > 0 && (
+                                                                                    <span className="ml-1.5 text-[10px] text-slate-400">({row.totalKg.toFixed(2)} kg)</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right text-indigo-600 dark:text-indigo-400 tabular-nums font-medium">
+                                                                                {row.wAvgRate > 0 ? `₹${row.wAvgRate.toLocaleString('en-IN', { maximumFractionDigits: 0 })}/kg` : '—'}
+                                                                            </td>
+                                                                            <td className="py-1.5 text-right font-extrabold tabular-nums text-slate-900 dark:text-white">
+                                                                                {row.value > 0 ? formatCurrency(row.value, 'INR') : '—'}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         )}
-                                    </tr>
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>

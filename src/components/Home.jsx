@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, LayoutDashboard } from 'lucide-react';
+import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, LayoutDashboard, CalendarCheck } from 'lucide-react';
 
 const Home = ({ onSelectModule, darkMode, showAdmin }) => {
     const modules = [
@@ -71,6 +71,16 @@ const Home = ({ onSelectModule, darkMode, showAdmin }) => {
             color: 'text-pink-500',
             bgColor: 'bg-pink-50 dark:bg-pink-900/20',
             borderColor: 'border-pink-200 dark:border-pink-800',
+            active: true
+        },
+        {
+            id: 'payroll',
+            name: 'Attendance & Payroll',
+            description: 'Track daily attendance, advances, and compute monthly salaries',
+            icon: CalendarCheck,
+            color: 'text-emerald-500',
+            bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+            borderColor: 'border-emerald-200 dark:border-emerald-800',
             active: true
         }
     ];

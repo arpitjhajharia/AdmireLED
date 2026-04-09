@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
 import { Archive, Trash2, Edit, X, Search, ClipboardList, Plus } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
+import { formatCurrency } from '../lib/utils';
+
+const toMeters = (length, unit) => {
+    if (unit === 'm') return length;
+    if (unit === 'ft') return length * 0.3048;
+    if (unit === 'mm') return length / 1000;
+    return length;
+};
+
+const emptyTx = () => ({
+    date: new Date().toISOString().split('T')[0],
+    type: 'in', itemId: '', qty: '', remarks: '',
+    lengthPerPiece: '', lengthUnit: 'ft', purchaseRatePerKg: ''
+});
 
 const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOnly = false }) => {
-    const [newTx, setNewTx] = useState({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+    const [newTx, setNewTx] = useState(emptyTx());
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -11,22 +25,50 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
 
     const col = () => db.collection('artifacts').doc(appId).collection('public').doc('data').collection('signage_transactions');
 
+    const selectedItem = signageInventory.find(i => i.id === newTx.itemId);
+    const isProfileSelected = selectedItem?.type === 'profile';
+
+    const buildTxData = (tx) => {
+        const item = signageInventory.find(i => i.id === tx.itemId);
+        const isProfile = item?.type === 'profile';
+        const data = { ...tx, qty: Number(tx.qty) };
+        if (isProfile && Number(tx.lengthPerPiece) > 0) {
+            data.lengthPerPiece = Number(tx.lengthPerPiece);
+            data.lengthUnit = tx.lengthUnit || 'ft';
+            data.purchaseRatePerKg = tx.type === 'in' ? Number(tx.purchaseRatePerKg || 0) : 0;
+        } else {
+            delete data.lengthPerPiece;
+            delete data.lengthUnit;
+            delete data.purchaseRatePerKg;
+        }
+        return data;
+    };
+
     const handleAddTx = async () => {
         if (!newTx.itemId || !newTx.qty) return alert('Select Item and Qty');
+        if (isProfileSelected && !newTx.lengthPerPiece) return alert('Length per piece is required for profiles');
         try {
+            const txData = buildTxData(newTx);
             if (editingId) {
-                await col().doc(editingId).update({ ...newTx, qty: Number(newTx.qty), updatedAt: new Date() });
+                await col().doc(editingId).update({ ...txData, updatedAt: new Date() });
                 setEditingId(null);
                 setShowForm(false);
             } else {
-                await col().add({ ...newTx, qty: Number(newTx.qty), createdAt: new Date() });
+                await col().add({ ...txData, createdAt: new Date() });
             }
-            setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+            setNewTx(emptyTx());
         } catch (e) { console.error(e); }
     };
 
     const handleEdit = (tx) => {
-        setNewTx({ ...tx, qty: tx.qty });
+        setNewTx({
+            ...emptyTx(),
+            ...tx,
+            qty: tx.qty,
+            lengthPerPiece: tx.lengthPerPiece ?? '',
+            lengthUnit: tx.lengthUnit ?? 'ft',
+            purchaseRatePerKg: tx.purchaseRatePerKg ?? '',
+        });
         setEditingId(tx.id);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -35,7 +77,7 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
     const handleCancel = () => {
         setEditingId(null);
         setShowForm(false);
-        setNewTx({ date: new Date().toISOString().split('T')[0], type: 'in', itemId: '', qty: '', remarks: '' });
+        setNewTx(emptyTx());
     };
 
     const handleDelete = async (id) => {
@@ -56,6 +98,41 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
         if (item.type === 'smps') return item.environment || '';
         if (item.type === 'acp') return item.acpThickness ? `${item.acpThickness}` : '';
         return '';
+    };
+
+    // Current stock for an item, excluding the tx being edited
+    const getStockBalance = (itemId) =>
+        signageTransactions
+            .filter(tx => tx.itemId === itemId && tx.id !== editingId)
+            .reduce((acc, tx) => acc + (tx.type === 'in' ? Number(tx.qty) : -Number(tx.qty)), 0);
+
+    // For profiles: distinct lengths still in stock, excluding the tx being edited
+    const getProfileAvailableLengths = (itemId) => {
+        const txs = signageTransactions.filter(tx => tx.itemId === itemId && tx.id !== editingId);
+        const map = {};
+        txs.forEach(tx => {
+            const lpp = Number(tx.lengthPerPiece || 0);
+            if (!lpp) return;
+            const unit = tx.lengthUnit || 'ft';
+            const key = `${lpp}_${unit}`;
+            if (!map[key]) map[key] = { lpp, unit, qty: 0 };
+            map[key].qty += tx.type === 'in' ? Number(tx.qty) : -Number(tx.qty);
+        });
+        return Object.values(map).filter(l => l.qty > 0).sort((a, b) => a.lpp - b.lpp);
+    };
+
+    // Returns enriched profile data if the tx has length info, otherwise null
+    const enrichProfileTx = (tx, item) => {
+        const lpp = Number(tx.lengthPerPiece || 0);
+        if (!lpp || item?.type !== 'profile') return null;
+        const unit = tx.lengthUnit || 'ft';
+        const qty = Number(tx.qty);
+        const totalLength = qty * lpp;
+        const totalLengthM = toMeters(totalLength, unit);
+        const kg = totalLengthM * Number(item.weightPerMeter || 0);
+        const rate = Number(tx.purchaseRatePerKg || 0);
+        const value = kg * rate;
+        return { lpp, unit, totalLength, totalLengthM, kg, value };
     };
 
     const sortedTx = [...signageTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -88,6 +165,20 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
     };
 
     const inputCls = "px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-500 transition-shadow";
+
+    // Stock-cap helpers (only relevant when form is open)
+    const currentStock = newTx.itemId ? getStockBalance(newTx.itemId) : null;
+    const availableLengths = (isProfileSelected && newTx.type === 'out' && newTx.itemId)
+        ? getProfileAvailableLengths(newTx.itemId)
+        : [];
+    const selectedLengthStock = availableLengths.find(
+        l => l.lpp === Number(newTx.lengthPerPiece) && l.unit === newTx.lengthUnit
+    );
+    const maxQty = newTx.type === 'out'
+        ? (isProfileSelected && newTx.lengthPerPiece
+            ? (selectedLengthStock?.qty ?? 0)
+            : (currentStock ?? 0))
+        : null;
 
     return (
         <div className="p-3 md:p-4">
@@ -172,7 +263,19 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                                         className={`px-3 py-1.5 text-[11px] font-bold transition-colors ${newTx.type === 'in' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
                                     >+ IN</button>
                                     <button
-                                        onClick={() => setNewTx({ ...newTx, type: 'out' })}
+                                        onClick={() => {
+                                            const balance = newTx.itemId ? getStockBalance(newTx.itemId) : 0;
+                                            const updates = { type: 'out' };
+                                            if (isProfileSelected && newTx.lengthPerPiece) {
+                                                const avail = getProfileAvailableLengths(newTx.itemId);
+                                                const found = avail.find(l => l.lpp === Number(newTx.lengthPerPiece) && l.unit === newTx.lengthUnit);
+                                                if (!found) { updates.lengthPerPiece = ''; updates.qty = ''; }
+                                                else if (newTx.qty && Number(newTx.qty) > found.qty) updates.qty = String(found.qty);
+                                            } else if (newTx.qty && Number(newTx.qty) > balance) {
+                                                updates.qty = String(balance);
+                                            }
+                                            setNewTx({ ...newTx, ...updates });
+                                        }}
                                         className={`px-3 py-1.5 text-[11px] font-bold transition-colors ${newTx.type === 'out' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-white dark:bg-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
                                     >- OUT</button>
                                 </div>
@@ -180,7 +283,15 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Component</label>
-                            <select value={newTx.itemId} onChange={e => setNewTx({ ...newTx, itemId: e.target.value })} className={inputCls + " w-full"}>
+                            <select value={newTx.itemId} onChange={e => {
+                                const newId = e.target.value;
+                                const updates = { itemId: newId, lengthPerPiece: '', lengthUnit: 'ft' };
+                                if (newTx.type === 'out' && newId && newTx.qty) {
+                                    const bal = getStockBalance(newId);
+                                    if (Number(newTx.qty) > bal) updates.qty = String(bal);
+                                }
+                                setNewTx({ ...newTx, ...updates });
+                            }} className={inputCls + " w-full"}>
                                 <option value="">Select Item...</option>
                                 {getGroupedOptions()}
                             </select>
@@ -189,14 +300,139 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Quantity</label>
-                            <input type="number" placeholder="Qty" value={newTx.qty} onChange={e => setNewTx({ ...newTx, qty: e.target.value })} className={inputCls + " w-full"} />
+                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                                Quantity (pcs)
+                                {newTx.type === 'out' && newTx.itemId && maxQty !== null && (
+                                    <span className="ml-1.5 text-[10px] normal-case font-normal text-red-400">
+                                        max {maxQty}
+                                    </span>
+                                )}
+                            </label>
+                            <input
+                                type="number"
+                                placeholder="Qty"
+                                value={newTx.qty}
+                                min={0}
+                                max={newTx.type === 'out' && maxQty !== null ? maxQty : undefined}
+                                onChange={e => {
+                                    let val = e.target.value;
+                                    if (newTx.type === 'out' && val !== '' && maxQty !== null && Number(val) > maxQty) {
+                                        val = String(maxQty);
+                                    }
+                                    setNewTx({ ...newTx, qty: val });
+                                }}
+                                className={inputCls + " w-full"}
+                            />
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Location / Source</label>
                             <input type="text" placeholder="Source/Loc" value={newTx.remarks} onChange={e => setNewTx({ ...newTx, remarks: e.target.value })} className={inputCls + " w-full"} />
                         </div>
                     </div>
+
+                    {/* Profile-specific fields */}
+                    {isProfileSelected && (
+                        <div className="mt-1 mb-3 p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700">
+                            <p className="text-[10px] font-bold uppercase text-indigo-500 dark:text-indigo-400 mb-2 tracking-wider">Profile Length Tracking</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                {newTx.type === 'out' ? (
+                                    /* OUT: dropdown of lengths currently in stock */
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Length in Stock</label>
+                                        {availableLengths.length === 0 ? (
+                                            <p className="text-[11px] text-red-400 italic py-1.5">No length data in stock</p>
+                                        ) : (
+                                            <select
+                                                value={newTx.lengthPerPiece !== '' ? `${newTx.lengthPerPiece}_${newTx.lengthUnit}` : ''}
+                                                onChange={e => {
+                                                    if (!e.target.value) {
+                                                        setNewTx({ ...newTx, lengthPerPiece: '', lengthUnit: 'ft' });
+                                                        return;
+                                                    }
+                                                    const found = availableLengths.find(l => `${l.lpp}_${l.unit}` === e.target.value);
+                                                    if (found) {
+                                                        const clampedQty = newTx.qty
+                                                            ? String(Math.min(Number(newTx.qty), found.qty))
+                                                            : '';
+                                                        setNewTx({ ...newTx, lengthPerPiece: found.lpp, lengthUnit: found.unit, qty: clampedQty });
+                                                    }
+                                                }}
+                                                className={inputCls + " w-full"}
+                                            >
+                                                <option value="">Select length…</option>
+                                                {availableLengths.map(l => (
+                                                    <option key={`${l.lpp}_${l.unit}`} value={`${l.lpp}_${l.unit}`}>
+                                                        {l.lpp} {l.unit} — {l.qty} pcs available
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                ) : (
+                                    /* IN: free-form length + unit inputs */
+                                    <>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                                                Length / Piece <span className="text-red-400">*</span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                placeholder="e.g. 6"
+                                                value={newTx.lengthPerPiece}
+                                                required
+                                                onChange={e => setNewTx({ ...newTx, lengthPerPiece: e.target.value })}
+                                                className={inputCls + " w-full" + (!newTx.lengthPerPiece ? " border-red-300 dark:border-red-600" : "")}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Unit</label>
+                                            <select
+                                                value={newTx.lengthUnit}
+                                                onChange={e => setNewTx({ ...newTx, lengthUnit: e.target.value })}
+                                                className={inputCls + " w-full"}
+                                            >
+                                                <option value="ft">ft (feet)</option>
+                                                <option value="m">m (metres)</option>
+                                                <option value="mm">mm (millimetres)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Purchase Rate (₹/kg)</label>
+                                            <input
+                                                type="number"
+                                                placeholder="₹ per kg"
+                                                value={newTx.purchaseRatePerKg}
+                                                onChange={e => setNewTx({ ...newTx, purchaseRatePerKg: e.target.value })}
+                                                className={inputCls + " w-full"}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            {/* Live preview */}
+                            {newTx.qty && newTx.lengthPerPiece && (
+                                <div className="mt-2 text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                                    {(() => {
+                                        const q = Number(newTx.qty);
+                                        const lpp = Number(newTx.lengthPerPiece);
+                                        const unit = newTx.lengthUnit;
+                                        const total = q * lpp;
+                                        const totalM = toMeters(total, unit);
+                                        const kg = totalM * Number(selectedItem?.weightPerMeter || 0);
+                                        const rate = Number(newTx.purchaseRatePerKg || 0);
+                                        const val = kg * rate;
+                                        return (
+                                            <span>
+                                                {q} pcs × {lpp}{unit} = <strong>{total.toFixed(2)}{unit}</strong>
+                                                {kg > 0 && <> → <strong>{kg.toFixed(2)} kg</strong></>}
+                                                {val > 0 && <> → <strong>{formatCurrency(val, 'INR')}</strong></>}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <button onClick={handleAddTx} className={`w-full md:w-auto text-white px-5 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${editingId ? 'bg-amber-600 hover:bg-amber-700' : 'bg-slate-800 dark:bg-slate-600 hover:bg-slate-900 dark:hover:bg-slate-500'}`}>
                         {editingId ? 'Update Transaction' : 'Add Transaction'}
@@ -210,6 +446,7 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                 <div className="md:hidden space-y-2">
                     {filteredTx.map(tx => {
                         const item = signageInventory.find(i => i.id === tx.itemId) || {};
+                        const enriched = enrichProfileTx(tx, item);
                         return (
                             <div key={tx.id} className={`bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between ${editingId === tx.id ? 'ring-2 ring-amber-300' : ''}`}>
                                 <div className="flex-1 min-w-0">
@@ -222,6 +459,12 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                                         </span>
                                     </div>
                                     <div className="font-bold text-slate-800 dark:text-white text-sm truncate">{getItemLabel(item)}</div>
+                                    {enriched && (
+                                        <div className="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium mt-0.5">
+                                            {tx.qty}×{enriched.lpp}{enriched.unit} = {enriched.totalLength.toFixed(1)}{enriched.unit} · {enriched.kg.toFixed(2)}kg
+                                            {enriched.value > 0 && ` · ₹${Number(tx.purchaseRatePerKg).toLocaleString('en-IN')}/kg`}
+                                        </div>
+                                    )}
                                     {tx.remarks && <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{tx.remarks}</div>}
                                 </div>
                                 <div className="text-right pl-3 border-l border-slate-100 dark:border-slate-700 ml-2 flex-shrink-0">
@@ -256,7 +499,7 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                                     <th className="px-3 py-1.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Type</th>
                                     <th className="px-3 py-1.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Component</th>
                                     <th className="px-3 py-1.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Category</th>
-                                    <th className="px-3 py-1.5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Qty</th>
+                                    <th className="px-3 py-1.5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Qty / Length</th>
                                     <th className="px-3 py-1.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Loc/Source</th>
                                     {!readOnly && <th className="px-2 py-1.5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] whitespace-nowrap">Actions</th>}
                                 </tr>
@@ -265,6 +508,7 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                                 {filteredTx.map((tx, rowIdx) => {
                                     const item = signageInventory.find(i => i.id === tx.itemId) || {};
                                     const subSpec = getItemSubSpec(item);
+                                    const enriched = enrichProfileTx(tx, item);
                                     return (
                                         <tr key={tx.id} className={`group transition-colors duration-100 ${rowIdx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/60 dark:bg-slate-800/50'} hover:bg-blue-50/50 dark:hover:bg-slate-700/60 ${editingId === tx.id ? 'bg-amber-50/60 dark:bg-amber-900/20' : ''}`}>
                                             {/* Date */}
@@ -302,11 +546,22 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                                                 </div>
                                             </td>
 
-                                            {/* Qty */}
+                                            {/* Qty / Length */}
                                             <td className="px-3 py-1 whitespace-nowrap text-right">
                                                 <span className={`text-[13px] font-extrabold tabular-nums tracking-tight ${tx.type === 'in' ? 'text-green-600 dark:text-green-500' : 'text-red-500 dark:text-red-400'}`}>
-                                                    {tx.type === 'in' ? '+' : '-'}{tx.qty}
+                                                    {tx.type === 'in' ? '+' : '-'}{tx.qty} pcs
                                                 </span>
+                                                {enriched && (
+                                                    <div className="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium leading-tight mt-0.5">
+                                                        <span>{tx.qty}×{enriched.lpp}{enriched.unit} = {enriched.totalLength.toFixed(1)}{enriched.unit}</span>
+                                                        {enriched.kg > 0 && (
+                                                            <span className="block">
+                                                                {enriched.kg.toFixed(2)} kg
+                                                                {enriched.value > 0 && ` · ₹${Number(tx.purchaseRatePerKg).toLocaleString('en-IN')}/kg`}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
 
                                             {/* Loc/Source */}
@@ -345,6 +600,7 @@ const SignageLedger = ({ signageInventory = [], signageTransactions = [], readOn
                     )}
                 </div>
             </div>
+
         </div>
     );
 };

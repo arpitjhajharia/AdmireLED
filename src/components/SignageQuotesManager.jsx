@@ -2,7 +2,7 @@ import React from 'react';
 import { Eye, Printer, Trash2, FileText, Download, Copy, Edit, Box, Monitor, Sun, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import { formatCurrency } from '../lib/utils';
-// Note: We create a simple Print View internally since the calculation is simple.
+import SignageQuoteLayout from './SignageQuoteLayout';
 
 const formatDate = (ts) => {
     if (!ts) return '—';
@@ -130,49 +130,12 @@ const SignageQuotesManager = ({ user, onLoadQuote, readOnly = false }) => {
                             </div>
                         </div>
                         <div className="flex-1 overflow-auto p-8 bg-slate-100 dark:bg-slate-800 flex justify-center">
-                            <div className="bg-white w-[210mm] min-h-[297mm] shadow-lg p-10 text-slate-800 print:shadow-none print:w-auto print:min-h-0">
-                                <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
-                                    <div>
-                                        <h1 className="text-3xl font-black text-slate-900 uppercase">Signage Estimate</h1>
-                                        <p className="text-sm font-bold text-slate-500 mt-1">Ref: {viewQuote.ref}</p>
-                                    </div>
-                                    <div className="text-right text-sm">
-                                        <p className="font-bold text-slate-700">Date: {viewQuote.createdAt ? formatDate(viewQuote.createdAt) : '—'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between mb-8 text-sm">
-                                    <div className="w-1/2">
-                                        <p className="font-bold text-slate-500 uppercase text-[10px] mb-1">To</p>
-                                        <p className="font-bold text-lg">{viewQuote.client}</p>
-                                        <p className="text-slate-600">Project: {viewQuote.project}</p>
-                                    </div>
-                                </div>
-                                <table className="w-full text-sm mb-6 pb-6 border-b-2 border-slate-200">
-                                    <thead>
-                                        <tr className="bg-slate-100 text-left font-bold text-slate-700">
-                                            <th className="p-2 border border-slate-200">Item</th>
-                                            <th className="p-2 border border-slate-200 text-center">Dimensions</th>
-                                            <th className="p-2 border border-slate-200 text-center">Qty</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {getScreens(viewQuote).map((s, i) => (
-                                            <tr key={i}>
-                                                <td className="p-2 border border-slate-200">{s.name}</td>
-                                                <td className="p-2 border border-slate-200 text-center">{s.width} x {s.height} {viewQuote.state?.unit || 'ft'}</td>
-                                                <td className="p-2 border border-slate-200 text-center">{s.screenQty}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <div className="flex justify-end mt-4">
-                                    <div className="w-64 text-right">
-                                        <div className="flex justify-between py-2 text-xl font-black text-slate-900 border-t-2 border-slate-800">
-                                            <span>Total</span>
-                                            <span>{formatCurrency(viewQuote.totalAmount, 'INR')}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="bg-white w-[210mm] min-h-[297mm] shadow-lg text-slate-800 print:shadow-none print:w-auto print:min-h-0">
+                                <SignageQuoteLayout
+                                    state={viewQuote.state}
+                                    allScreensTotal={viewQuote.allScreensTotal}
+                                    calculation={viewQuote.calculation}
+                                />
                             </div>
                         </div>
                     </div>

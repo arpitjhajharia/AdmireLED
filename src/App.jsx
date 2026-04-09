@@ -31,6 +31,9 @@ import SignageInventoryManager from './components/SignageInventoryManager';
 import SignageQuotesManager from './components/SignageQuotesManager';
 import SignageLedger from './components/SignageLedger';
 
+// Payroll
+import AttendancePayroll from './components/AttendancePayroll';
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -455,6 +458,11 @@ const App = () => {
                 Signage Calc
               </span>
             )}
+            {activeModule === 'payroll' && (
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400">
+                Payroll
+              </span>
+            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -704,6 +712,10 @@ const App = () => {
 
         {activeModule === 'cut_list' && (
           <CutListCalculator />
+        )}
+
+        {activeModule === 'payroll' && (
+          <AttendancePayroll user={user} userRole={userRole} />
         )}
 
         {activeModule === 'admin' && showUsersTab && (
