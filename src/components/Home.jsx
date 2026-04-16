@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, LayoutDashboard, CalendarCheck } from 'lucide-react';
+import { Calculator, ListTodo, Users, BarChart, Shield, Archive, Scissors, LayoutDashboard, CalendarCheck, Ruler } from 'lucide-react';
 
 const Home = ({ onSelectModule, darkMode, perms }) => {
     const allModules = [
@@ -52,6 +52,16 @@ const Home = ({ onSelectModule, darkMode, perms }) => {
             color: 'text-indigo-500',
             bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
             borderColor: 'border-indigo-200 dark:border-indigo-800',
+        },
+        {
+            id: 'structural',
+            permKey: 'module.structural',
+            name: 'Structural Planner',
+            description: 'Weight & cost calculator for MS, Aluminium, SS304 — pipes, angles, sheets, beams & more',
+            icon: Ruler,
+            color: 'text-cyan-500',
+            bgColor: 'bg-cyan-50 dark:bg-cyan-900/20',
+            borderColor: 'border-cyan-200 dark:border-cyan-800',
         },
         {
             id: 'cut_list',

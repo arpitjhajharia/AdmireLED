@@ -35,6 +35,9 @@ import SignageLedger from './components/SignageLedger';
 // Payroll
 import AttendancePayroll from './components/AttendancePayroll';
 
+// Structural Planner
+import StructuralPlanner from './components/StructuralPlanner';
+
 
 // Maps legacy and new role strings to canonical ROLES values.
 // Old Firestore docs may still carry 'labour' or 'supervisor'.
@@ -463,6 +466,11 @@ const App = () => {
                 Misc Stock
               </span>
             )}
+            {activeModule === 'structural' && (
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-400">
+                Structural
+              </span>
+            )}
             {activeModule === 'cut_list' && (
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400">
                 Cut List
@@ -714,6 +722,10 @@ const App = () => {
 
         {activeModule === 'misc_stock' && (
           <MiscStockTracker user={user} perms={perms} />
+        )}
+
+        {activeModule === 'structural' && (
+          <StructuralPlanner user={user} perms={perms} />
         )}
 
         {activeModule === 'cut_list' && (

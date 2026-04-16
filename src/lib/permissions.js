@@ -33,6 +33,7 @@ export const RULES = {
   'module.crm': [SA, OW, AC],
   'module.reports': ALL_ROLES,             // BOQ Tracker
   'module.misc_stock': STOCK_LEVEL,
+  'module.structural': [SA, OW, AC, AS, FL, SM],
   'module.cut_list': [SA, OW, AS, FL, SM, ST],
   'module.payroll': [SA, OW, AC, AS],
 
@@ -145,6 +146,11 @@ export const RULES = {
   'boq.batchStatusUpdate': [SA, OW, AS, FL, ST],
   'boq.batchDelete': ADMIN_OWNER,
   'boq.delete': ADMIN_OWNER,
+
+  // ── Structural Planner ──────────────────────────────────────────────────
+  'structural.addEdit': ADMIN_OWNER,
+  'structural.delete':  ADMIN_OWNER,
+  'structural.save':    [SA, OW, AC, AS, FL, SM],
 
   // ── Cut List Calculator ─────────────────────────────────────────────────
   'cutList.use': [SA, OW, AS, FL, SM, ST],
