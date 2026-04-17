@@ -32,7 +32,10 @@ import {
     EyeOff,
     List,
     CheckSquare,
-    ArrowUpDown
+    ArrowUpDown,
+    Minus,
+    BookOpen,
+    TrendingUp
 } from 'lucide-react';
 
 const ROLES = {
@@ -1966,15 +1969,7 @@ const BOQManager = ({ boq, user, onBack }) => {
                 </table>
             </div>}
 
-            {activeTab === 'dpr' && (
-                <div className="flex-1 overflow-auto relative bg-white flex items-center justify-center">
-                    <div className="text-center text-slate-400">
-                        <div className="text-4xl mb-3">📋</div>
-                        <div className="text-base font-medium text-slate-500">DPR</div>
-                        <div className="text-sm mt-1">Daily Progress Report — coming soon</div>
-                    </div>
-                </div>
-            )}
+            {activeTab === 'dpr' && <DPRTab boq={boq} user={user} />}
 
             {importConfig && (
                 <ImportMapper
@@ -2675,6 +2670,413 @@ const UserManagement = ({ onClose }) => {
                         </div>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// ── DPR Tab ───────────────────────────────────────────────────────────────────
+
+const DPRTab = ({ boq, user }) => {
+    const canManageTasks = user.role === ROLES.ADMIN;
+    const todayStr = () => new Date().toISOString().split('T')[0];
+
+    const [tasks, setTasks] = useState([]);
+    const [entries, setEntries] = useState([]);
+    const [employees, setEmployees] = useState([]);
+
+    // Task library form (admin only)
+    const [showTaskForm, setShowTaskForm] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
+    const [taskForm, setTaskForm] = useState({ name: '', description: '', unit: 'pcs', defaultDailyTarget: '', totalTarget: '' });
+    const [savingTask, setSavingTask] = useState(false);
+
+    // Log progress — per-task row state + shared date
+    const [logDate, setLogDate] = useState(todayStr());
+    const [logRows, setLogRows] = useState({});
+    const [savingRow, setSavingRow] = useState(null);
+
+    // Accordion
+    const [expandedTasks, setExpandedTasks] = useState(new Set());
+
+    useEffect(() => {
+        const ref = collection(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_tasks');
+        return onSnapshot(ref, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    }, [boq.id]);
+
+    useEffect(() => {
+        const ref = collection(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_entries');
+        return onSnapshot(ref, snap => {
+            const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            loaded.sort((a, b) => b.date.localeCompare(a.date));
+            setEntries(loaded);
+        });
+    }, [boq.id]);
+
+    useEffect(() => {
+        getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'payroll_employees'))
+            .then(snap => setEmployees(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+            .catch(() => {});
+    }, []);
+
+    // Initialise a blank row for each task
+    useEffect(() => {
+        setLogRows(prev => {
+            const next = {};
+            tasks.forEach(t => { next[t.id] = prev[t.id] || { workers: [], actual: 0, workerSearch: '', showDrop: false }; });
+            return next;
+        });
+    }, [tasks]);
+
+    const cumulativeSummary = useMemo(() => {
+        const map = {};
+        entries.forEach(e => {
+            if (!map[e.taskId]) map[e.taskId] = { taskName: e.taskName, unit: e.unit || 'pcs', total: 0, days: 0, totalTarget: 0 };
+            map[e.taskId].total += e.actualCount || 0;
+            map[e.taskId].days += 1;
+        });
+        tasks.forEach(t => { if (map[t.id]) map[t.id].totalTarget = t.totalTarget || 0; });
+        return Object.values(map);
+    }, [entries, tasks]);
+
+    const handleSaveTask = async () => {
+        if (!taskForm.name.trim()) return;
+        const daily = Number(taskForm.defaultDailyTarget) || 0;
+        const total = Number(taskForm.totalTarget) || 0;
+        if (!daily && !total) { alert('Set at least a Daily Target or a Total Target.'); return; }
+        setSavingTask(true);
+        try {
+            const data = { name: taskForm.name.trim(), description: taskForm.description.trim(), unit: taskForm.unit || 'pcs', defaultDailyTarget: daily, totalTarget: total };
+            if (editingTask) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_tasks', editingTask.id), data);
+            } else {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_tasks'), data);
+            }
+            setShowTaskForm(false); setEditingTask(null);
+            setTaskForm({ name: '', description: '', unit: 'pcs', defaultDailyTarget: '', totalTarget: '' });
+        } catch (e) { alert('Error: ' + e.message); }
+        setSavingTask(false);
+    };
+
+    const handleLogRow = async (taskId) => {
+        const task = tasks.find(t => t.id === taskId);
+        const row = logRows[taskId];
+        if (!task || !logDate) return;
+        setSavingRow(taskId);
+        try {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_entries'), {
+                date: logDate,
+                taskId,
+                taskName: task.name,
+                unit: task.unit || 'pcs',
+                workers: row?.workers || [],
+                actualCount: Number(row?.actual) || 0,
+                targetCount: task.defaultDailyTarget || 0,
+                createdBy: user.username,
+                createdAt: serverTimestamp(),
+            });
+            setLogRows(prev => ({ ...prev, [taskId]: { workers: [], actual: 0, workerSearch: '', showDrop: false } }));
+        } catch (e) { alert('Error: ' + e.message); }
+        setSavingRow(null);
+    };
+
+    const updRow = (taskId, patch) => setLogRows(prev => ({ ...prev, [taskId]: { ...prev[taskId], ...patch } }));
+
+    const fmtTs = (ts) => {
+        if (!ts) return '—';
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const day = String(d.getDate()).padStart(2, '0');
+        const mon = MONTHS[d.getMonth()];
+        let h = d.getHours();
+        const ampm = h >= 12 ? 'pm' : 'am';
+        h = h % 12 || 12;
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${day}-${mon} ${h}:${min}${ampm}`;
+    };
+
+    const toggleExpand = (taskId) => setExpandedTasks(prev => {
+        const next = new Set(prev);
+        next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+        return next;
+    });
+
+    // Per-task cumulative totals from entries
+    const taskTotals = useMemo(() => {
+        const map = {};
+        entries.forEach(e => {
+            if (!map[e.taskId]) map[e.taskId] = { total: 0, days: 0 };
+            map[e.taskId].total += e.actualCount || 0;
+            map[e.taskId].days += 1;
+        });
+        return map;
+    }, [entries]);
+
+    // Entries grouped by task (sorted date desc already from snapshot)
+    const entriesByTask = useMemo(() => {
+        const map = {};
+        entries.forEach(e => { (map[e.taskId] = map[e.taskId] || []).push(e); });
+        return map;
+    }, [entries]);
+
+    const colCount = canManageTasks ? 7 : 6;
+    const th = 'px-2 py-1.5 text-left text-sm font-bold text-slate-400 uppercase tracking-wide whitespace-nowrap';
+    const td = 'px-2 py-2 align-top text-sm';
+
+    return (
+        <div className="flex-1 overflow-auto bg-slate-50 p-3">
+            <div className="bg-white rounded-xl border border-slate-200" style={{ overflow: 'visible' }}>
+
+                {/* ── Header ── */}
+                <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50 rounded-t-xl">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide">Daily Progress Report</h3>
+                        {canManageTasks && (
+                            <button
+                                onClick={() => { setShowTaskForm(true); setEditingTask(null); setTaskForm({ name: '', description: '', unit: 'pcs', defaultDailyTarget: '', totalTarget: '' }); }}
+                                className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 px-2 py-0.5 rounded hover:bg-indigo-50"
+                            >
+                                <Plus size={12} /> Add Task
+                            </button>
+                        )}
+                    </div>
+                    <input type="date" value={logDate} onChange={e => setLogDate(e.target.value)} className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                </div>
+
+                {/* ── Task form (inline panel, admin only) ── */}
+                {showTaskForm && (
+                    <div className="px-3 py-2.5 bg-indigo-50 border-b flex flex-wrap gap-2 items-end">
+                        {[
+                            { label: 'Name', key: 'name', placeholder: 'e.g. Profile Cutting', w: 'w-36' },
+                            { label: 'Description', key: 'description', placeholder: 'Short description…', w: 'w-52' },
+                            { label: 'Unit', key: 'unit', placeholder: 'pcs', w: 'w-16' },
+                        ].map(({ label, key, placeholder, w }) => (
+                            <div key={key} className="flex flex-col gap-0.5">
+                                <label className="text-sm font-semibold text-slate-500 uppercase">{label}</label>
+                                <input autoFocus={key === 'name'} className={`border rounded px-2 py-1 text-sm ${w} focus:outline-none focus:ring-1 focus:ring-indigo-400`} placeholder={placeholder} value={taskForm[key]} onChange={e => setTaskForm(f => ({ ...f, [key]: e.target.value }))} />
+                            </div>
+                        ))}
+                        {[
+                            { label: 'Daily Target', key: 'defaultDailyTarget', placeholder: '200' },
+                            { label: 'Total Target', key: 'totalTarget', placeholder: '1000' },
+                        ].map(({ label, key, placeholder }) => (
+                            <div key={key} className="flex flex-col gap-0.5">
+                                <label className="text-sm font-semibold text-slate-500 uppercase">{label}</label>
+                                <input type="number" min="0" className="border rounded px-2 py-1 text-sm w-24 focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder={placeholder} value={taskForm[key]} onChange={e => setTaskForm(f => ({ ...f, [key]: e.target.value }))} />
+                            </div>
+                        ))}
+                        <div className="flex gap-1.5 pb-0.5">
+                            <button onClick={handleSaveTask} disabled={savingTask || !taskForm.name.trim()} className="bg-indigo-600 text-white text-sm px-3 py-1.5 rounded font-semibold hover:bg-indigo-700 disabled:opacity-50">
+                                {savingTask ? '…' : editingTask ? 'Update' : 'Add'}
+                            </button>
+                            <button onClick={() => { setShowTaskForm(false); setEditingTask(null); }} className="text-slate-500 text-sm px-2 py-1.5 rounded hover:bg-slate-200">✕</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Empty state ── */}
+                {tasks.length === 0 ? (
+                    <div className="px-4 py-10 text-center text-slate-400 text-sm">
+                        {canManageTasks ? 'No tasks yet. Click "Add Task" to get started.' : 'No tasks defined yet. Ask an admin to set up the task library.'}
+                    </div>
+                ) : (
+                    <div style={{ overflow: 'visible' }}>
+                        <table className="w-full text-sm" style={{ overflow: 'visible' }}>
+                            <thead>
+                                <tr className="border-b bg-slate-50">
+                                    <th className={th} style={{ minWidth: 140 }}>Task</th>
+                                    <th className={th} style={{ minWidth: 100 }}>Workers</th>
+                                    <th className={`${th} text-center`} style={{ width: 100 }}>Actual</th>
+                                    <th className={`${th} text-center`} style={{ minWidth: 120 }}>Today</th>
+                                    <th className={`${th} text-center`} style={{ minWidth: 130 }}>Lifetime</th>
+                                    <th style={{ width: 56 }}></th>
+                                    {canManageTasks && <th style={{ width: 48 }}></th>}
+                                </tr>
+                            </thead>
+                            <tbody style={{ overflow: 'visible' }}>
+                                {tasks.map(task => {
+                                    const row = logRows[task.id] || { workers: [], actual: 0, workerSearch: '', showDrop: false };
+                                    const stats = taskTotals[task.id] || { total: 0, days: 0 };
+                                    const taskEntryList = entriesByTask[task.id] || [];
+                                    const isExpanded = expandedTasks.has(task.id);
+                                    const todayActual = taskEntryList.filter(e => e.date === logDate).reduce((s, e) => s + (e.actualCount || 0), 0);
+                                    const dailyPct = task.defaultDailyTarget > 0 ? Math.min(100, Math.round(todayActual / task.defaultDailyTarget * 100)) : null;
+                                    const lifetimePct = task.totalTarget > 0 ? Math.min(100, Math.round(stats.total / task.totalTarget * 100)) : null;
+                                    const filteredEmps = employees.filter(e => e.name?.toLowerCase().includes((row.workerSearch || '').toLowerCase()) && !row.workers.includes(e.name));
+
+                                    return (
+                                        <React.Fragment key={task.id}>
+                                            <tr
+                                            className={`border-b hover:bg-slate-50/50 cursor-pointer select-none ${isExpanded ? 'bg-indigo-50/30' : ''}`}
+                                            style={{ overflow: 'visible' }}
+                                            onClick={e => { if (e.target.closest('button,input,a')) return; toggleExpand(task.id); }}
+                                        >
+
+                                                {/* Task + description */}
+                                                <td className={td}>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="font-semibold text-slate-700">{task.name}</span>
+                                                        {taskEntryList.length > 0 && (
+                                                            <span className={`text-slate-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`} style={{ display: 'inline-flex' }}>
+                                                                <ChevronDown size={13} />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {task.description && <div className="text-sm text-slate-400 mt-0.5 leading-tight max-w-[160px]">{task.description}</div>}
+                                                </td>
+
+                                                {/* Workers tag input */}
+                                                <td className={td} style={{ overflow: 'visible', position: 'relative' }}>
+                                                    <div className="border rounded flex flex-wrap gap-0.5 px-1.5 py-1 min-h-[28px] bg-white cursor-text focus-within:ring-1 focus-within:ring-indigo-400"
+                                                        onClick={() => updRow(task.id, { showDrop: true })}>
+                                                        {row.workers.map(w => (
+                                                            <span key={w} className="flex items-center gap-0.5 bg-indigo-100 text-indigo-700 text-sm px-1.5 py-0.5 rounded-full">
+                                                                {w}
+                                                                <button onClick={ev => { ev.stopPropagation(); updRow(task.id, { workers: row.workers.filter(x => x !== w) }); }}><X size={9} /></button>
+                                                            </span>
+                                                        ))}
+                                                        <input
+                                                            className="flex-1 min-w-[36px] text-sm outline-none bg-transparent"
+                                                            placeholder={row.workers.length === 0 ? 'Add…' : ''}
+                                                            value={row.workerSearch || ''}
+                                                            onChange={e => updRow(task.id, { workerSearch: e.target.value, showDrop: true })}
+                                                            onFocus={() => updRow(task.id, { showDrop: true })}
+                                                            onBlur={() => setTimeout(() => updRow(task.id, { showDrop: false }), 150)}
+                                                        />
+                                                    </div>
+                                                    {row.showDrop && filteredEmps.length > 0 && (
+                                                        <div className="absolute left-0 right-0 top-full mt-0.5 bg-white border rounded shadow-lg z-30 max-h-36 overflow-y-auto">
+                                                            {filteredEmps.map(emp => (
+                                                                <button key={emp.id} className="w-full text-left px-2 py-1.5 text-sm hover:bg-indigo-50 text-slate-700"
+                                                                    onMouseDown={() => updRow(task.id, { workers: [...row.workers, emp.name], workerSearch: '' })}>
+                                                                    {emp.name}{emp.department ? <span className="text-slate-400 ml-1">· {emp.department}</span> : ''}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* Actual stepper */}
+                                                <td className={`${td} text-center`}>
+                                                    <div className="flex items-center border rounded overflow-hidden mx-auto" style={{ width: 100 }}>
+                                                        <button onClick={() => updRow(task.id, { actual: Math.max(0, Number(row.actual) - 1) })} className="px-1.5 py-1.5 bg-slate-50 hover:bg-slate-100 border-r text-slate-500"><Minus size={11} /></button>
+                                                        <input
+                                                            type="number" min="0"
+                                                            value={row.actual}
+                                                            onChange={e => updRow(task.id, { actual: e.target.value })}
+                                                            className="w-0 flex-1 text-center text-sm py-1 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        />
+                                                        <button onClick={() => updRow(task.id, { actual: Number(row.actual) + 1 })} className="px-1.5 py-1.5 bg-slate-50 hover:bg-slate-100 border-l text-slate-500"><Plus size={11} /></button>
+                                                    </div>
+                                                </td>
+
+                                                {/* Today's progress vs daily target */}
+                                                <td className={`${td} text-center`}>
+                                                    {task.defaultDailyTarget > 0 ? (
+                                                        <div>
+                                                            <span className={`font-semibold ${dailyPct != null && dailyPct >= 100 ? 'text-green-600' : 'text-indigo-700'}`}>{todayActual}</span>
+                                                            <span className="text-slate-400 text-sm"> / {task.defaultDailyTarget} {task.unit}</span>
+                                                            <div className="mt-1">
+                                                                <div className="h-1 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${dailyPct != null && dailyPct >= 100 ? 'bg-green-500' : 'bg-indigo-400'}`} style={{ width: `${dailyPct ?? 0}%` }} /></div>
+                                                                <div className={`text-sm mt-0.5 font-bold ${dailyPct != null && dailyPct >= 100 ? 'text-green-600' : 'text-indigo-500'}`}>{dailyPct ?? 0}%</div>
+                                                            </div>
+                                                        </div>
+                                                    ) : <span className="text-slate-300">—</span>}
+                                                </td>
+
+                                                {/* Lifetime progress */}
+                                                <td className={`${td} text-center`}>
+                                                    {task.totalTarget > 0 ? (
+                                                        <div>
+                                                            <span className="font-semibold text-indigo-700">{stats.total}</span>
+                                                            <span className="text-slate-400 text-sm"> / {task.totalTarget} {task.unit}</span>
+                                                            {lifetimePct !== null && (
+                                                                <div className="mt-1">
+                                                                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${lifetimePct >= 100 ? 'bg-green-500' : 'bg-teal-400'}`} style={{ width: `${lifetimePct}%` }} /></div>
+                                                                    <div className={`text-sm mt-0.5 font-bold ${lifetimePct >= 100 ? 'text-green-600' : 'text-teal-600'}`}>{lifetimePct}%</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-semibold text-indigo-700">{stats.total} <span className="font-normal text-slate-400 text-sm">{task.unit}</span></span>
+                                                    )}
+                                                    {stats.days > 0 && <div className="text-sm text-slate-300 mt-0.5">{stats.days} {stats.days === 1 ? 'entry' : 'entries'}</div>}
+                                                </td>
+
+                                                {/* Log */}
+                                                <td className={`${td} text-center`}>
+                                                    <button onClick={() => handleLogRow(task.id)} disabled={savingRow === task.id} className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-2.5 py-1 rounded disabled:opacity-50">
+                                                        {savingRow === task.id ? '…' : 'Log'}
+                                                    </button>
+                                                </td>
+
+                                                {/* Admin actions */}
+                                                {canManageTasks && (
+                                                    <td className={`${td} text-center`}>
+                                                        <div className="flex gap-0.5 justify-center">
+                                                            <button onClick={() => { setEditingTask(task); setTaskForm({ name: task.name, description: task.description || '', unit: task.unit || 'pcs', defaultDailyTarget: String(task.defaultDailyTarget || ''), totalTarget: String(task.totalTarget || '') }); setShowTaskForm(true); }} className="p-1 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded"><Edit size={13} /></button>
+                                                            <button onClick={async () => { if (window.confirm('Delete task?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_tasks', task.id)); }} className="p-1 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </tr>
+
+                                            {/* Accordion: entry history for this task */}
+                                            {isExpanded && (
+                                                <tr className="bg-slate-50/70">
+                                                    <td colSpan={colCount} className="px-6 py-2 border-b">
+                                                        {taskEntryList.length === 0 ? (
+                                                            <span className="text-sm text-slate-400">No entries yet.</span>
+                                                        ) : (
+                                                            <table className="w-full text-sm">
+                                                                <thead>
+                                                                    <tr className="text-sm text-slate-400 uppercase">
+                                                                        <th className="pb-1 text-left font-bold pr-4">Date</th>
+                                                                        <th className="pb-1 text-left font-bold pr-4">Workers</th>
+                                                                        <th className="pb-1 text-center font-bold pr-4">Actual / Target</th>
+                                                                        <th className="pb-1 text-center font-bold w-20">Progress</th>
+                                                                        <th className="pb-1 text-right font-bold">By</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-100">
+                                                                    {taskEntryList.map(e => {
+                                                                        const pct = e.targetCount > 0 ? Math.min(100, Math.round(e.actualCount / e.targetCount * 100)) : null;
+                                                                        return (
+                                                                            <tr key={e.id}>
+                                                                                <td className="py-1.5 pr-4 text-slate-600 font-medium whitespace-nowrap">{fmtTs(e.createdAt)}</td>
+                                                                                <td className="py-1.5 pr-4">
+                                                                                    <div className="flex flex-wrap gap-0.5">
+                                                                                        {e.workers?.length > 0 ? e.workers.map(w => <span key={w} className="text-sm bg-white border text-slate-500 px-1.5 py-0.5 rounded">{w}</span>) : <span className="text-slate-300">—</span>}
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td className={`py-1.5 pr-4 text-center font-bold ${pct != null && pct >= 100 ? 'text-green-600' : 'text-indigo-700'}`}>
+                                                                                    {e.actualCount} / {e.targetCount} {e.unit}
+                                                                                </td>
+                                                                                <td className="py-1.5 text-center">
+                                                                                    {pct !== null ? (
+                                                                                        <div className="flex flex-col items-center gap-0.5">
+                                                                                            <span className={`text-sm font-bold ${pct >= 100 ? 'text-green-600' : 'text-indigo-600'}`}>{pct}%</span>
+                                                                                            <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden"><div className={`h-full ${pct >= 100 ? 'bg-green-500' : 'bg-indigo-400'}`} style={{ width: `${pct}%` }} /></div>
+                                                                                        </div>
+                                                                                    ) : '—'}
+                                                                                </td>
+                                                                                <td className="py-1.5 text-right text-slate-400 whitespace-nowrap">{e.createdBy}</td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
+                                                                </tbody>
+                                                            </table>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );
