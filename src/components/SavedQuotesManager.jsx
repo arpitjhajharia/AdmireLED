@@ -339,8 +339,17 @@ const SavedQuotesManager = ({ user, inventory, transactions, exchangeRate, onLoa
             .map(id => allQuoteImages.find(img => img.id === id))
             .filter(Boolean);
 
+        // Terms from calculatorState is always the source of truth for display
+        const stateTerms = quote.calculatorState?.terms || {};
+
         if (quote.allScreensData) {
-            return { allScreensData: quote.allScreensData, client: quote.client, project: quote.project, refImages: resolvedRefImages };
+            // Inject stateTerms into each calculation so PrintLayout always shows correct scope/terms
+            const enrichedCalcs = (quote.allScreensData.calculations || []).map(calc => ({
+                ...calc,
+                terms: { ...(calc.terms || {}), ...stateTerms, scope: { ...(calc.terms?.scope || {}), ...(stateTerms.scope || {}) } }
+            }));
+            const enrichedAllScreensData = { ...quote.allScreensData, calculations: enrichedCalcs };
+            return { allScreensData: enrichedAllScreensData, client: quote.client, project: quote.project, refImages: resolvedRefImages };
         }
 
         const state = quote.calculatorState;
