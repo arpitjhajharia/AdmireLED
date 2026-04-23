@@ -726,7 +726,7 @@ function computeSalary(emp, attendance, advances, selectedMonth, settings) {
   const perHour = perDay / (emp.shiftHours || 9);
 
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
-  let presentDays = 0, halfDays = 0, lateDays = 0, leftEarlyDays = 0, otDays = 0, otHours = 0, absentDays = 0;
+  let presentDays = 0, halfDays = 0, lateDays = 0, leftEarlyDays = 0, otDays = 0, otHours = 0, absentDays = 0, holidayDays = 0, weekOffDays = 0;
 
   days.forEach(d => {
     const key = `${emp.id}_${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -739,6 +739,8 @@ function computeSalary(emp, attendance, advances, selectedMonth, settings) {
       case 'late_arrival': lateDays++; break;
       case 'left_early': leftEarlyDays++; break;
       case 'ot': otDays++; otHours += rec.otHours || 0; break;
+      case 'holiday': holidayDays++; break;
+      case 'week_off': weekOffDays++; break;
       default: break;
     }
   });
@@ -751,7 +753,9 @@ function computeSalary(emp, attendance, advances, selectedMonth, settings) {
     otDays +
     halfDays * 0.5 +
     lateDays * (1 - lateDeduct) +
-    leftEarlyDays * (1 - leftEarlyDeduct);
+    leftEarlyDays * (1 - leftEarlyDeduct) +
+    holidayDays +
+    weekOffDays;
 
   const gross = currentSalary * (effectiveDays / totalDays);
   const otPay = perHour * otHours;
@@ -763,7 +767,7 @@ function computeSalary(emp, attendance, advances, selectedMonth, settings) {
     currentSalary,
     totalDays,
     effectiveDays: Math.round(effectiveDays * 100) / 100,
-    presentDays, halfDays, lateDays, leftEarlyDays, otDays, otHours, absentDays,
+    presentDays, halfDays, lateDays, leftEarlyDays, otDays, otHours, absentDays, holidayDays, weekOffDays,
     gross: Math.round(gross * 100) / 100,
     otPay: Math.round(otPay * 100) / 100,
     advanceOutstanding,
@@ -911,6 +915,7 @@ function SalaryTab({ employees, attendance, advances, salaries, selectedMonth, s
                         <div className="text-[10px] text-slate-400">{emp.department} • {fmt(c.currentSalary)}/mo</div>
                         <div className="text-[10px] text-slate-400">
                           P:{c.presentDays + c.otDays} H:{c.halfDays} L:{c.lateDays} LE:{c.leftEarlyDays} A:{c.absentDays}
+                          {c.holidayDays > 0 && ` Ho:${c.holidayDays}`}{c.weekOffDays > 0 && ` WO:${c.weekOffDays}`}
                           {c.otHours > 0 && ` OT:${c.otHours}h`}
                         </div>
                       </td>
