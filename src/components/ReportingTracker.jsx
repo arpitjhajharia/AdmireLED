@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import ExcelJS from 'exceljs';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, serverTimestamp, onSnapshot, writeBatch } from 'firebase/firestore';
 import { firebaseApp, appId } from '../lib/firebase';
@@ -360,83 +361,95 @@ const Lightbox = ({ images, initialIndex = 0, onClose, onDelete }) => {
 };
 
 const UploadModal = ({ isOpen, onClose, onUpload, type, stages, defaultStage }) => {
-    const [selectedStage, setSelectedStage] = useState(defaultStage || '');
-    const [file, setFile] = useState(null);
+    const [items, setItems] = useState([]); // [{id, file, stage, preview}]
     const [uploading, setUploading] = useState(false);
 
+    const defaultSt = defaultStage || (stages && stages.length > 0 ? stages[0] : '');
+
     useEffect(() => {
-        if (isOpen) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setSelectedStage(defaultStage || (stages && stages.length > 0 ? stages[0] : ''));
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setFile(null);
-        }
-    }, [isOpen, defaultStage, stages]);
+        if (isOpen) setItems([]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
+    const addFiles = (fileList) => {
+        const newItems = Array.from(fileList).map(file => ({
+            id: Math.random().toString(36).slice(2),
+            file,
+            stage: defaultSt,
+            preview: URL.createObjectURL(file),
+        }));
+        setItems(prev => [...prev, ...newItems]);
     };
 
+    const removeItem = (id) => setItems(prev => prev.filter(i => i.id !== id));
+    const setItemStage = (id, stage) => setItems(prev => prev.map(i => i.id === id ? { ...i, stage } : i));
+
     const handleSubmit = async () => {
-        if (!file) return;
+        if (items.length === 0) return;
         setUploading(true);
-        await onUpload(file, selectedStage);
+        await onUpload(items.map(i => ({ file: i.file, stage: i.stage })));
         setUploading(false);
         onClose();
     };
 
     return (
         <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-                <h3 className="text-lg font-bold mb-4">Add {type} Photo</h3>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Add {type} Photos</h3>
+                    <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700"><X size={18} /></button>
+                </div>
 
-                {stages && stages.length > 0 && (
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Stage</label>
-                        <select
-                            className="w-full border rounded-lg p-2 bg-slate-50 text-sm"
-                            value={selectedStage}
-                            onChange={(e) => setSelectedStage(e.target.value)}
-                        >
-                            {stages.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                {/* File pickers — always visible so user can add more */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <label className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50 cursor-pointer hover:bg-indigo-100 active:bg-indigo-200 transition select-none">
+                        <Camera size={22} className="text-indigo-500" />
+                        <span className="text-sm font-semibold text-indigo-700">Take Photo</span>
+                        <input type="file" accept="image/*" capture="environment" className="hidden"
+                            onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }} />
+                    </label>
+                    <label className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition select-none">
+                        <ImageIcon size={22} className="text-slate-400" />
+                        <span className="text-sm font-semibold text-slate-600">From Gallery</span>
+                        <input type="file" accept="image/*" multiple className="hidden"
+                            onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ''; }} />
+                    </label>
+                </div>
+
+                {/* Pending images list */}
+                {items.length > 0 && (
+                    <div className="space-y-2 max-h-56 overflow-y-auto mb-4 pr-1">
+                        {items.map(item => (
+                            <div key={item.id} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border">
+                                <img src={item.preview} className="h-11 w-11 object-cover rounded border flex-shrink-0 bg-white" alt="" />
+                                <span className="flex-1 text-xs text-slate-600 truncate min-w-0">{item.file.name}</span>
+                                {stages && stages.length > 0 ? (
+                                    <select
+                                        className="text-xs border rounded-lg px-1.5 py-1 bg-white flex-shrink-0 max-w-[130px]"
+                                        value={item.stage}
+                                        onChange={e => setItemStage(item.id, e.target.value)}
+                                    >
+                                        {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                ) : (
+                                    <span className="text-[10px] text-slate-400 flex-shrink-0">{item.stage || '—'}</span>
+                                )}
+                                <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 flex-shrink-0 p-0.5"><X size={13} /></button>
+                            </div>
+                        ))}
                     </div>
                 )}
-
-                <div className="mb-5">
-                    {file ? (
-                        <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg border text-sm">
-                            <ImageIcon size={16} className="text-indigo-500 flex-shrink-0" />
-                            <span className="flex-1 truncate text-slate-700 font-medium">{file.name}</span>
-                            <button onClick={() => setFile(null)} className="text-red-400 hover:text-red-600 flex-shrink-0"><X size={14} /></button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                            <label className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50 cursor-pointer hover:bg-indigo-100 active:bg-indigo-200 transition select-none">
-                                <Camera size={22} className="text-indigo-500" />
-                                <span className="text-sm font-semibold text-indigo-700">Take Photo</span>
-                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
-                            </label>
-                            <label className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition select-none">
-                                <ImageIcon size={22} className="text-slate-400" />
-                                <span className="text-sm font-semibold text-slate-600">From Gallery</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                            </label>
-                        </div>
-                    )}
-                </div>
 
                 <div className="flex justify-end gap-2">
                     <button onClick={onClose} className="px-4 py-2 text-slate-600 font-medium text-sm">Cancel</button>
                     <button
                         onClick={handleSubmit}
-                        disabled={!file || uploading}
+                        disabled={items.length === 0 || uploading}
                         className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 text-sm"
                     >
                         {uploading ? <span className="animate-spin"><Package size={15} /></span> : <Upload size={15} />}
-                        Upload
+                        {items.length > 0 ? `Upload ${items.length} Photo${items.length > 1 ? 's' : ''}` : 'Upload'}
                     </button>
                 </div>
             </div>
@@ -1569,15 +1582,19 @@ const BOQManager = ({ boq, user, onBack }) => {
         }
     };
 
-    const handleImageUpload = async (file, stage) => {
+    const handleImageUpload = async (uploads) => {
+        // uploads: [{file, stage}, ...]
         const { sign, isFactory } = uploadModal;
-        if (!sign) return;
+        if (!sign || !uploads.length) return;
 
-        if (isFactory) setLastFactoryStage(stage);
-        else setLastSiteStage(stage);
+        const lastStage = uploads[uploads.length - 1].stage;
+        if (isFactory) setLastFactoryStage(lastStage);
+        else setLastSiteStage(lastStage);
 
-        const finalStage = stage || (isFactory ? 'General Production' : 'Installation');
-        await executeUpload(sign, file, finalStage, isFactory);
+        for (const { file, stage } of uploads) {
+            const finalStage = stage || (isFactory ? 'General Production' : 'Installation');
+            await executeUpload(sign, file, finalStage, isFactory);
+        }
     };
 
     const executeUpload = async (sign, file, stage, isFactory) => {
@@ -1585,8 +1602,14 @@ const BOQManager = ({ boq, user, onBack }) => {
         const signRef = doc(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'signs', sign._id);
         const field = isFactory ? 'factoryImages' : 'siteImages';
 
-        const compressed = await compressImage(file, 1200);
-        const artImages = sign.artworkImages || [];
+        // Compress and fetch fresh sign state concurrently so sequential uploads see the latest image list
+        const [compressed, freshSnap] = await Promise.all([
+            compressImage(file, 1200),
+            getDoc(signRef),
+        ]);
+        const freshSign = freshSnap.exists() ? { _id: sign._id, ...freshSnap.data() } : sign;
+
+        const artImages = freshSign.artworkImages || [];
         const hasArtworks = artImages.length > 0;
 
         const newImage = {
@@ -1597,7 +1620,7 @@ const BOQManager = ({ boq, user, onBack }) => {
             ...(isFactory ? { qcStatus: hasArtworks ? 'pending' : 'na', qcArtworkIdx: null, qcIssues: [] } : {})
         };
 
-        const currentImages = sign[field] || [];
+        const currentImages = freshSign[field] || [];
         const newImagesList = [...currentImages, newImage];
         let updates = { [field]: newImagesList };
 
@@ -1616,47 +1639,43 @@ const BOQManager = ({ boq, user, onBack }) => {
         await updateDoc(signRef, updates);
 
         // ── Background QC for factory photos that have artworks ──────────────
-        if (isFactory) {
-            const artImages = sign.artworkImages || [];
-            const hasArtworks = artImages.length > 0;
-            if (hasArtworks) {
-                const compressed = newImagesList[newImagesList.length - 1].url;
-                const newPhotoIdx = newImagesList.length - 1;
+        if (isFactory && hasArtworks) {
+            const photoUrl = newImagesList[newImagesList.length - 1].url;
+            const newPhotoIdx = newImagesList.length - 1;
 
-                (async () => {
-                    try {
-                        const result = await runGeminiQC(artImages, compressed);
+            (async () => {
+                try {
+                    const result = await runGeminiQC(artImages, photoUrl);
 
-                        const currentDoc = await getDoc(signRef);
-                        if (!currentDoc.exists()) return;
-                        const latestImages = [...(currentDoc.data()[field] || [])];
+                    const currentDoc = await getDoc(signRef);
+                    if (!currentDoc.exists()) return;
+                    const latestImages = [...(currentDoc.data()[field] || [])];
 
-                        if (latestImages[newPhotoIdx]) {
-                            if (!result) {
-                                latestImages[newPhotoIdx] = {
-                                    ...latestImages[newPhotoIdx],
-                                    qcStatus: 'error',
-                                    qcIssues: ['Automated QC could not complete. Please review manually.'],
-                                    qcCheckedAt: new Date().toISOString()
-                                };
-                            } else {
-                                latestImages[newPhotoIdx] = {
-                                    ...latestImages[newPhotoIdx],
-                                    qcStatus: result.pass ? 'pass' : 'fail',
-                                    qcArtworkIdx: result.artworkIdx ?? 0,
-                                    qcIssues: result.issues || [],
-                                    qcCheckedAt: new Date().toISOString()
-                                };
-                            }
+                    if (latestImages[newPhotoIdx]) {
+                        if (!result) {
+                            latestImages[newPhotoIdx] = {
+                                ...latestImages[newPhotoIdx],
+                                qcStatus: 'error',
+                                qcIssues: ['Automated QC could not complete. Please review manually.'],
+                                qcCheckedAt: new Date().toISOString()
+                            };
+                        } else {
+                            latestImages[newPhotoIdx] = {
+                                ...latestImages[newPhotoIdx],
+                                qcStatus: result.pass ? 'pass' : 'fail',
+                                qcArtworkIdx: result.artworkIdx ?? 0,
+                                qcIssues: result.issues || [],
+                                qcCheckedAt: new Date().toISOString()
+                            };
                         }
-
-                        const newQcStatus = computeFactoryQcStatus(latestImages, artImages.length);
-                        await updateDoc(signRef, { [field]: latestImages, factoryQcStatus: newQcStatus });
-                    } catch (e) {
-                        console.error('Background QC failed:', e);
                     }
-                })();
-            }
+
+                    const newQcStatus = computeFactoryQcStatus(latestImages, artImages.length);
+                    await updateDoc(signRef, { [field]: latestImages, factoryQcStatus: newQcStatus });
+                } catch (e) {
+                    console.error('Background QC failed:', e);
+                }
+            })();
         }
     };
 
@@ -2760,7 +2779,22 @@ const PrintView = ({ boq, signs, columns, onClose }) => {
                 </div>
             </div>
 
-            <div className="mt-12 print:mt-0 print:w-full">
+            <div className="mt-12">
+                {renderReportTable()}
+            </div>
+
+            {ReactDOM.createPortal(
+                <div className="print-only-portal">
+                    {renderReportTable()}
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+
+    function renderReportTable() {
+        return (
+            <div className="p-4 bg-white text-black text-xs">
                 <div className="mb-4 border-b pb-2 flex justify-between items-end">
                     <h1 className="text-xl font-bold uppercase">{boq.name}</h1>
                     <p className="text-xs text-slate-500">Generated {new Date().toLocaleDateString()}</p>
@@ -2768,7 +2802,7 @@ const PrintView = ({ boq, signs, columns, onClose }) => {
 
                 <table className="w-full text-xs border-collapse border border-slate-300">
                     <thead>
-                        <tr className="bg-slate-100 print:bg-slate-200">
+                        <tr className="bg-slate-100">
                             <th className="border border-slate-300 p-1.5 text-left w-52">Sign Details</th>
                             {activeReportCols.map(col => (
                                 <th key={col.id} className={`border border-slate-300 p-1.5 w-40 text-left uppercase ${col.color}`}>
@@ -2778,52 +2812,45 @@ const PrintView = ({ boq, signs, columns, onClose }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {signs.map(sign => {
-                            return (
-                                <tr key={sign._id} className="break-inside-avoid">
-                                    <td className="border border-slate-300 p-1 align-top">
-                                        <div className="flex justify-between items-start">
-                                            <span className="font-bold text-sm leading-none">{sign[idCol?.key] || sign._id}</span>
-                                            <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-50 px-1 rounded border leading-none">{sign.status.split(' ')[0]}</span>
-                                        </div>
-                                        <div className="mt-0.5 leading-[1.1]">
-                                            {textCols.map(c => (
-                                                <div key={c.key} className="grid grid-cols-[60px_1fr] gap-x-1 text-xs">
-                                                    <span className="text-slate-500 font-medium truncate">{c.label}:</span>
-                                                    <span className="font-semibold">{sign[c.key]}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </td>
+                        {signs.map(sign => (
+                            <tr key={sign._id} className="break-inside-avoid">
+                                <td className="border border-slate-300 p-1 align-top">
+                                    <div className="flex justify-between items-start">
+                                        <span className="font-bold text-sm leading-none">{sign[idCol?.key] || sign._id}</span>
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-50 px-1 rounded border leading-none">{sign.status.split(' ')[0]}</span>
+                                    </div>
+                                    <div className="mt-0.5 leading-[1.1]">
+                                        {textCols.map(c => (
+                                            <div key={c.key} className="grid grid-cols-[60px_1fr] gap-x-1 text-xs">
+                                                <span className="text-slate-500 font-medium truncate">{c.label}:</span>
+                                                <span className="font-semibold">{sign[c.key]}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </td>
 
-                                    {activeReportCols.map(col => {
-                                        const images = getImagesForCol(sign, col);
-                                        const bgClass = col.type === 'artwork' ? 'bg-slate-50/30' : (col.type === 'factory' ? 'bg-orange-50/10' : 'bg-green-50/10');
-
-                                        return (
-                                            <td key={col.id} className={`border border-slate-300 p-1 align-top ${bgClass}`}>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {images.map((img, i) => (
-                                                        <img key={i} src={img.url} className="h-16 w-auto object-contain border bg-white shadow-sm" alt="" />
-                                                    ))}
-                                                </div>
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            );
-                        })}
+                                {activeReportCols.map(col => {
+                                    const images = getImagesForCol(sign, col);
+                                    const bgClass = col.type === 'artwork' ? 'bg-slate-50/30' : (col.type === 'factory' ? 'bg-orange-50/10' : 'bg-green-50/10');
+                                    return (
+                                        <td key={col.id} className={`border border-slate-300 p-1 align-top ${bgClass}`}>
+                                            <div className="flex flex-wrap gap-1">
+                                                {images.map((img, i) => (
+                                                    <img key={i} src={img.url} className="h-16 w-auto object-contain border bg-white shadow-sm" alt="" />
+                                                ))}
+                                            </div>
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
+
+                <style>{`@media print { @page { size: landscape; margin: 0.5cm; } body { -webkit-print-color-adjust: exact; } }`}</style>
             </div>
-            <style>{`
-                        @media print {
-                            @page { size: landscape; margin: 0.5cm; }
-                            body { -webkit-print-color-adjust: exact; }
-                        }
-                    `}</style>
-        </div>
-    );
+        );
+    }
 };
 
 const UserManagement = ({ onClose }) => {
@@ -2925,7 +2952,7 @@ const DPRTab = ({ boq, user }) => {
 
     useEffect(() => {
         const ref = collection(db, 'artifacts', appId, 'public', 'data', 'boqs', boq.id, 'dpr_tasks');
-        return onSnapshot(ref, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+        return onSnapshot(ref, snap => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name))));
     }, [boq.id]);
 
     useEffect(() => {

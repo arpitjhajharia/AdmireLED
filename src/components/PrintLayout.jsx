@@ -170,7 +170,12 @@ const PrintLayout = ({ data, allScreensData, currency = 'INR', exchangeRate, dat
 
                                 <h3 className="font-bold text-slate-700 uppercase border-b border-slate-300 mt-4 mb-2">Module & Cabinet</h3>
                                 <div className="grid grid-cols-3 gap-y-1 text-[11px]">
-                                    <span className="font-semibold text-slate-500">Module Size:</span> <span className="col-span-2">{moduleType.width} x {moduleType.height} mm</span>
+                                    <span className="font-semibold text-slate-500">Module Size:</span>
+                                    <span className="col-span-2">
+                                        {assemblyMode === 'ready' && moduleType.moduleWidth
+                                            ? `${moduleType.moduleWidth} x ${moduleType.moduleHeight}`
+                                            : `${moduleType.width} x ${moduleType.height}`} mm
+                                    </span>
                                     <span className="font-semibold text-slate-500">Cabinet Type:</span> <span className="col-span-2">{cabinetType.material || 'Standard'}</span>
                                     <span className="font-semibold text-slate-500">Cabinet Size:</span> <span className="col-span-2">{cabinetType.width} x {cabinetType.height} mm</span>
                                     <span className="font-semibold text-slate-500">Cabinet Layout:</span> <span className="col-span-2">{gridCols} x {gridRows} cabinets (WxH)</span>

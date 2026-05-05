@@ -4,7 +4,7 @@ import { db, appId } from '../lib/firebase';
 import {
   Users, Calendar, DollarSign, BarChart2, Plus, Edit2, Trash2, Save, X,
   ChevronLeft, ChevronRight, Settings, RefreshCw, TrendingUp, CreditCard,
-  Clock, AlertCircle, CheckCircle2, Activity
+  Clock, AlertCircle, CheckCircle2, Activity, Star
 } from 'lucide-react';
 
 // ─── Firestore helper ──────────────────────────────────────────────────────────
@@ -29,8 +29,30 @@ const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getDayName = (year, month, day) => ['Su','Mo','Tu','We','Th','Fr','Sa'][new Date(year, month, day).getDay()];
 const isWeekend = (year, month, day) => { const d = new Date(year, month, day).getDay(); return d === 0 || d === 6; };
 
+// Derives the effective attendance status for a day, applying Sunday and holiday defaults
+function computeEffectiveStatus(empId, day, year, month, daysInMonth, attendance, holidays) {
+  const pad = n => String(n).padStart(2, '0');
+  const key = `${empId}_${year}-${pad(month + 1)}-${pad(day)}`;
+  const rec = attendance[key];
+  if (rec?.status) return rec.status;
+
+  if (new Date(year, month, day).getDay() === 0) { // Sunday
+    const satKey = `${empId}_${year}-${pad(month + 1)}-${pad(day - 1)}`;
+    const monKey = `${empId}_${year}-${pad(month + 1)}-${pad(day + 1)}`;
+    const satAbsent = day > 1 && attendance[satKey]?.status === 'absent';
+    const monAbsent = day < daysInMonth && attendance[monKey]?.status === 'absent';
+    return (satAbsent && monAbsent) ? 'absent' : 'week_off';
+  }
+
+  if (holidays.includes(`${year}-${pad(month + 1)}-${pad(day)}`)) return 'holiday';
+
+  return null;
+}
+
 const fmt = (n) => '₹' + (Math.round(n || 0)).toLocaleString('en-IN');
 const fmtN = (n, dec = 2) => (n || 0).toFixed(dec);
+// Handles both legacy string[] and new {date, name}[] holiday formats
+const toDateStrings = (arr) => (arr || []).map(h => typeof h === 'string' ? h : h.date);
 
 const parseYM = (ym) => { const [y, m] = ym.split('-').map(Number); return { year: y, month: m - 1 }; };
 const todayYM = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
@@ -385,12 +407,11 @@ function StatusPicker({ picker, onSelect, onClear, onClose, currentStatus, otInp
 }
 
 // ─── Attendance Tab ────────────────────────────────────────────────────────────
-function AttendanceTab({ employees, attendance, selectedMonth }) {
+function AttendanceTab({ employees, attendance, selectedMonth, holidays = [] }) {
   const { year, month } = parseYM(selectedMonth);
   const daysInMonth = getDaysInMonth(year, month);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // picker: { empId, empName, day, cx, cellTop, cellBottom, below }
   const [picker, setPicker] = useState(null);
   const [otInput, setOtInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -398,8 +419,11 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
   const attKey = (empId, day) => `${empId}_${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   const dateStr = (day) => `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  const getStatus = (empId, day) => attendance[attKey(empId, day)]?.status || null;
+  const getExplicitStatus = (empId, day) => attendance[attKey(empId, day)]?.status || null;
   const getOtH = (empId, day) => attendance[attKey(empId, day)]?.otHours || 0;
+  const getEffectiveStatus = (empId, day) =>
+    computeEffectiveStatus(empId, day, year, month, daysInMonth, attendance, holidays);
+  const isHoliday = (day) => holidays.includes(dateStr(day));
 
   const writeStatus = async (empId, day, status, otHours = 0) => {
     const key = attKey(empId, day);
@@ -421,15 +445,12 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
   };
 
   const handleCellClick = (e, emp, day) => {
-    // If same cell is open, close it
     if (picker?.empId === emp.id && picker?.day === day) { setPicker(null); return; }
-
     const rect = e.currentTarget.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cellTop = rect.top;
     const cellBottom = rect.bottom;
     const below = cellBottom + 260 < window.innerHeight;
-
     setPicker({ empId: emp.id, empName: emp.name, day, cx, cellTop, cellBottom, below });
     setOtInput(String(getOtH(emp.id, day) || ''));
   };
@@ -439,7 +460,6 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
     const { empId, day } = picker;
     const curOt = status === 'ot' ? (Number(otInput) || 0) : 0;
     await writeStatus(empId, day, status, curOt);
-    // keep open for OT input; close for all other statuses
     if (status !== 'ot') setPicker(null);
   };
 
@@ -459,24 +479,27 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
     const counts = { present: 0, absent: 0, half_day: 0, late_arrival: 0, left_early: 0, ot: 0, holiday: 0, week_off: 0 };
     let otHours = 0;
     days.forEach(d => {
-      const s = getStatus(empId, d);
+      const s = getEffectiveStatus(empId, d);
       if (s) { counts[s] = (counts[s] || 0) + 1; if (s === 'ot') otHours += getOtH(empId, d); }
     });
     return { counts, otHours };
   };
 
-  const pickerCurrentStatus = picker ? getStatus(picker.empId, picker.day) : null;
+  const pickerCurrentStatus = picker ? getEffectiveStatus(picker.empId, picker.day) : null;
 
   return (
     <div>
       {/* Legend */}
-      <div className="mb-4 flex flex-wrap gap-2 text-xs">
+      <div className="mb-3 flex flex-wrap gap-2 text-xs">
         {STATUS_KEYS.map(k => (
           <span key={k} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${STATUS[k].bg} ${STATUS[k].text} font-bold`}>
             {STATUS[k].abbr} — {STATUS[k].label}
           </span>
         ))}
       </div>
+      <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-4 italic">
+        Sundays auto-apply Week Off. Dimmed cells are auto-derived (click to override). Paid holidays shown in amber.
+      </p>
 
       {!employees.length ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
@@ -490,12 +513,21 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-700/50">
                   <th className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-700/50 border-b border-r border-slate-200 dark:border-slate-600 px-3 py-2 text-left font-semibold text-slate-600 dark:text-slate-300 min-w-[150px]">Employee</th>
-                  {days.map(d => (
-                    <th key={d} className={`border-b border-slate-200 dark:border-slate-600 px-0.5 py-1 text-center font-semibold min-w-[30px] ${isWeekend(year, month, d) ? 'text-red-400 bg-red-50/60 dark:bg-red-900/10' : 'text-slate-500 dark:text-slate-400'}`}>
-                      <div className="text-xs">{d}</div>
-                      <div className="text-[9px] font-normal opacity-70">{getDayName(year, month, d)}</div>
-                    </th>
-                  ))}
+                  {days.map(d => {
+                    const holiday = isHoliday(d);
+                    const weekend = isWeekend(year, month, d);
+                    return (
+                      <th key={d} className={`border-b border-slate-200 dark:border-slate-600 px-0.5 py-1 text-center font-semibold min-w-[30px] ${
+                        holiday ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' :
+                        weekend ? 'text-red-400 bg-red-50/60 dark:bg-red-900/10' :
+                        'text-slate-500 dark:text-slate-400'
+                      }`}>
+                        <div className="text-xs">{d}</div>
+                        <div className="text-[9px] font-normal opacity-70">{getDayName(year, month, d)}</div>
+                        {holiday && <div className="text-[7px] font-bold leading-none text-amber-500">HO</div>}
+                      </th>
+                    );
+                  })}
                   <th className="border-b border-l border-slate-200 dark:border-slate-600 px-2 py-2 text-center text-slate-600 dark:text-slate-300 font-semibold min-w-[56px] whitespace-nowrap">P / OT</th>
                   <th className="border-b border-slate-200 dark:border-slate-600 px-2 py-2 text-center text-slate-600 dark:text-slate-300 font-semibold min-w-[40px]">Abs</th>
                 </tr>
@@ -510,21 +542,26 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
                         <div className="text-[10px] text-slate-400">{emp.department}</div>
                       </td>
                       {days.map(d => {
-                        const status = getStatus(emp.id, d);
+                        const effectiveStatus = getEffectiveStatus(emp.id, d);
+                        const isExplicit = !!getExplicitStatus(emp.id, d);
                         const isActivePicker = picker?.empId === emp.id && picker?.day === d;
-                        const otH = status === 'ot' ? getOtH(emp.id, d) : 0;
+                        const otH = effectiveStatus === 'ot' ? getOtH(emp.id, d) : 0;
+                        const holiday = isHoliday(d);
                         return (
-                          <td key={d} className={`px-0.5 py-1 text-center ${isWeekend(year, month, d) ? 'bg-red-50/30 dark:bg-red-900/5' : ''}`}>
+                          <td key={d} className={`px-0.5 py-1 text-center ${
+                            holiday && !isExplicit ? 'bg-amber-50/30 dark:bg-amber-900/5' :
+                            isWeekend(year, month, d) ? 'bg-red-50/30 dark:bg-red-900/5' : ''
+                          }`}>
                             <button
                               onClick={e => handleCellClick(e, emp, d)}
                               className={`w-[28px] h-[28px] rounded-md text-[9px] font-bold flex flex-col items-center justify-center mx-auto transition-all active:scale-90
-                                ${status
-                                  ? `${STATUS[status].bg} ${STATUS[status].text} hover:opacity-85`
+                                ${effectiveStatus
+                                  ? `${STATUS[effectiveStatus].bg} ${STATUS[effectiveStatus].text} hover:opacity-85 ${!isExplicit ? 'opacity-60' : ''}`
                                   : 'bg-slate-100 dark:bg-slate-700 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'}
                                 ${isActivePicker ? 'ring-2 ring-offset-1 ring-slate-400 dark:ring-slate-300' : ''}`}
                             >
-                              <span>{status ? STATUS[status].abbr : '·'}</span>
-                              {status === 'ot' && otH > 0 && (
+                              <span>{effectiveStatus ? STATUS[effectiveStatus].abbr : '·'}</span>
+                              {effectiveStatus === 'ot' && otH > 0 && (
                                 <span className="text-[7px] leading-none opacity-90">{otH}h</span>
                               )}
                             </button>
@@ -545,7 +582,6 @@ function AttendanceTab({ employees, attendance, selectedMonth }) {
         </div>
       )}
 
-      {/* Fixed-position picker — rendered outside scrollable container, never clipped */}
       {picker && (
         <StatusPicker
           picker={picker}
@@ -725,20 +761,22 @@ function computeSalary(emp, attendance, advances, selectedMonth, settings) {
   const perDay = currentSalary / totalDays;
   const perHour = perDay / (emp.shiftHours || 9);
 
+  const holidays = toDateStrings(settings.holidays?.[String(year)]);
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
   let presentDays = 0, halfDays = 0, lateDays = 0, leftEarlyDays = 0, otDays = 0, otHours = 0, absentDays = 0, holidayDays = 0, weekOffDays = 0;
 
   days.forEach(d => {
+    const status = computeEffectiveStatus(emp.id, d, year, month, totalDays, attendance, holidays);
+    if (!status) return;
     const key = `${emp.id}_${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const rec = attendance[key];
-    if (!rec) return;
-    switch (rec.status) {
+    switch (status) {
       case 'present': presentDays++; break;
       case 'absent': absentDays++; break;
       case 'half_day': halfDays++; break;
       case 'late_arrival': lateDays++; break;
       case 'left_early': leftEarlyDays++; break;
-      case 'ot': otDays++; otHours += rec.otHours || 0; break;
+      case 'ot': otDays++; otHours += rec?.otHours || 0; break;
       case 'holiday': holidayDays++; break;
       case 'week_off': weekOffDays++; break;
       default: break;
@@ -1040,6 +1078,7 @@ function DashboardTab({ employees, attendance, advances, salaries, selectedMonth
 
   const attKeyFn = (empId, day) => `${empId}_${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   const days = Array.from({ length: totalDays }, (_, i) => i + 1);
+  const dashHolidays = toDateStrings(settings.holidays?.[String(year)]);
 
   const cards = [
     { label: 'Headcount', value: headcount, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
@@ -1084,7 +1123,7 @@ function DashboardTab({ employees, attendance, advances, salaries, selectedMonth
               <div key={emp.id} className="flex items-center gap-[2px] mb-[3px]">
                 <div className="w-[128px] pr-2 text-right text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate flex-shrink-0">{emp.name}</div>
                 {days.map(d => {
-                  const s = attendance[attKeyFn(emp.id, d)]?.status;
+                  const s = computeEffectiveStatus(emp.id, d, year, month, totalDays, attendance, dashHolidays);
                   const sc = s ? STATUS[s] : null;
                   return (
                     <div key={d} title={s ? STATUS[s].label : 'No record'}
@@ -1171,6 +1210,358 @@ function DashboardTab({ employees, attendance, advances, salaries, selectedMonth
   );
 }
 
+// ─── Holidays Tab ──────────────────────────────────────────────────────────────
+function HolidaysTab({ settings, onSaveSettings, user, canApprove }) {
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(String(currentYear));
+  const [draftHolidays, setDraftHolidays] = useState([]);
+  const [dateInput, setDateInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  // Inline edit state for draft list
+  const [editingDraftDate, setEditingDraftDate] = useState(null);
+  const [editDraftDate, setEditDraftDate] = useState('');
+  const [editDraftName, setEditDraftName] = useState('');
+  // Inline edit state for approved list (owner only)
+  const [editingApprovedDate, setEditingApprovedDate] = useState(null);
+  const [editApprovedDate, setEditApprovedDate] = useState('');
+  const [editApprovedName, setEditApprovedName] = useState('');
+
+  const normalizeHols = (arr) => (arr || []).map(h => typeof h === 'string' ? { date: h, name: '' } : h);
+
+  const approvedHolidays = normalizeHols(settings.holidays?.[year]);
+  const draft = settings.holidaysDraft?.[year];
+  const hasPendingDraft = draft?.status === 'pending';
+
+  useEffect(() => {
+    const raw = draft?.status === 'pending' ? (draft.dates || []) : (settings.holidays?.[year] || []);
+    setDraftHolidays([...normalizeHols(raw)].sort((a, b) => a.date.localeCompare(b.date)));
+    setDateInput('');
+    setNameInput('');
+    setEditingDraftDate(null);
+    setEditingApprovedDate(null);
+  }, [settings, year]);
+
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const fmtDate = (d) => {
+    const dt = new Date(d + 'T00:00:00');
+    return { display: dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' }), weekday: WEEKDAYS[dt.getDay()] };
+  };
+
+  const approvedDateStrs = approvedHolidays.map(h => h.date);
+
+  const addHoliday = () => {
+    if (!dateInput) return;
+    if (!dateInput.startsWith(year)) { alert(`Please select a date in ${year}`); return; }
+    if (draftHolidays.some(h => h.date === dateInput)) return;
+    if (draftHolidays.length >= 12) { alert('Maximum 12 holidays allowed per year'); return; }
+    setDraftHolidays(prev => [...prev, { date: dateInput, name: nameInput.trim() }].sort((a, b) => a.date.localeCompare(b.date)));
+    setDateInput('');
+    setNameInput('');
+  };
+
+  const removeHoliday = (date) => setDraftHolidays(prev => prev.filter(h => h.date !== date));
+
+  const startDraftEdit = (h) => { setEditingDraftDate(h.date); setEditDraftDate(h.date); setEditDraftName(h.name || ''); };
+  const saveDraftEdit = () => {
+    if (!editDraftDate) return;
+    setDraftHolidays(prev =>
+      prev.map(h => h.date === editingDraftDate ? { date: editDraftDate, name: editDraftName.trim() } : h)
+        .sort((a, b) => a.date.localeCompare(b.date))
+    );
+    setEditingDraftDate(null);
+  };
+
+  const startApprovedEdit = (h) => { setEditingApprovedDate(h.date); setEditApprovedDate(h.date); setEditApprovedName(h.name || ''); };
+  const saveApprovedEdit = async () => {
+    if (!editApprovedDate) return;
+    setSaving(true);
+    try {
+      const updated = approvedHolidays
+        .map(h => h.date === editingApprovedDate ? { date: editApprovedDate, name: editApprovedName.trim() } : h)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      await onSaveSettings({ holidays: { ...(settings.holidays || {}), [year]: updated } });
+      setEditingApprovedDate(null);
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const buildDraftPayload = (status) => ({
+    ...(settings.holidaysDraft || {}),
+    [year]: { dates: draftHolidays, proposedBy: user?.username || user?.name || 'user', proposedAt: new Date().toISOString(), status },
+  });
+
+  const handlePropose = async () => {
+    setSaving(true);
+    try { await onSaveSettings({ holidaysDraft: buildDraftPayload('pending') }); }
+    catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const handleSaveApproved = async () => {
+    setSaving(true);
+    try {
+      const newHolidays = { ...(settings.holidays || {}), [year]: draftHolidays };
+      await onSaveSettings({ holidays: newHolidays, holidaysDraft: buildDraftPayload('approved') });
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const handleApproveDraft = async () => {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      const newHolidays = { ...(settings.holidays || {}), [year]: normalizeHols(draft.dates) };
+      const newDraftMeta = { ...(settings.holidaysDraft || {}), [year]: { ...draft, status: 'approved' } };
+      await onSaveSettings({ holidays: newHolidays, holidaysDraft: newDraftMeta });
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const handleRejectDraft = async () => {
+    if (!draft) return;
+    setSaving(true);
+    try {
+      const newDraftMeta = { ...(settings.holidaysDraft || {}), [year]: { ...draft, status: 'rejected' } };
+      await onSaveSettings({ holidaysDraft: newDraftMeta });
+    } catch (e) { alert('Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  const draftHols = hasPendingDraft ? normalizeHols(draft.dates) : [];
+  const draftDateStrs = draftHols.map(h => h.date);
+  const draftAdded   = draftHols.filter(h => !approvedDateStrs.includes(h.date));
+  const draftRemoved = approvedHolidays.filter(h => !draftDateStrs.includes(h.date));
+  const draftKept    = draftHols.filter(h => approvedDateStrs.includes(h.date));
+
+  const inlineEditRow = (dateVal, setDateVal, nameVal, setNameVal, onSave, onCancel, yearStr) => (
+    <div className="flex items-center gap-2 flex-1 min-w-0">
+      <input type="date" value={dateVal} min={`${yearStr}-01-01`} max={`${yearStr}-12-31`}
+        onChange={e => setDateVal(e.target.value)}
+        className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 w-36 flex-shrink-0" />
+      <input type="text" value={nameVal} placeholder="Holiday name"
+        onChange={e => setNameVal(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel(); }}
+        className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex-1 min-w-0" />
+      <button onClick={onSave} className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors flex-shrink-0">
+        <CheckCircle2 size={14} />
+      </button>
+      <button onClick={onCancel} className="p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors flex-shrink-0">
+        <X size={14} />
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="max-w-lg mx-auto space-y-5">
+      {/* Year selector */}
+      <div className="flex items-center gap-3">
+        <label className={lbl + ' mb-0'}>Calendar Year</label>
+        <select className={inp('w-28')} value={year} onChange={e => { setYear(e.target.value); setDateInput(''); setNameInput(''); }}>
+          {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+            <option key={y} value={String(y)}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* ── Pending approval banner — owner only ── */}
+      {hasPendingDraft && canApprove && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 bg-amber-100 dark:bg-amber-800/40 border-b border-amber-200 dark:border-amber-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
+              <span className="text-sm font-bold text-amber-800 dark:text-amber-300">Pending Approval</span>
+            </div>
+            <span className="text-xs text-amber-600 dark:text-amber-400">
+              by <span className="font-semibold">{draft.proposedBy}</span>
+              {draft.proposedAt && <> · {new Date(draft.proposedAt).toLocaleDateString('en-IN')}</>}
+            </span>
+          </div>
+          <div className="px-4 py-3 space-y-1.5 text-sm">
+            {draftAdded.map(h => { const f = fmtDate(h.date); return (
+              <div key={h.date} className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                <Plus size={13} className="flex-shrink-0" />
+                <span className="font-semibold">{f.display}</span>
+                {h.name && <span className="text-xs font-medium opacity-80">{h.name}</span>}
+                <span className="text-xs opacity-70">{f.weekday}</span>
+              </div>
+            ); })}
+            {draftRemoved.map(h => { const f = fmtDate(h.date); return (
+              <div key={h.date} className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <X size={13} className="flex-shrink-0" />
+                <span className="font-semibold line-through">{f.display}</span>
+                {h.name && <span className="text-xs opacity-70 line-through">{h.name}</span>}
+                <span className="text-xs opacity-70">{f.weekday}</span>
+              </div>
+            ); })}
+            {draftKept.map(h => { const f = fmtDate(h.date); return (
+              <div key={h.date} className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                <span className="w-3.5 flex-shrink-0" />
+                <span>{f.display}</span>
+                {h.name && <span className="text-xs opacity-70">{h.name}</span>}
+                <span className="text-xs opacity-70">{f.weekday}</span>
+              </div>
+            ); })}
+            {!draft.dates?.length && <p className="text-xs text-slate-400">Proposes removing all holidays</p>}
+          </div>
+          <div className="px-4 py-3 border-t border-amber-200 dark:border-amber-700 flex gap-2">
+            <button onClick={handleApproveDraft} disabled={saving}
+              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50">
+              {saving ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Approve
+            </button>
+            <button onClick={handleRejectDraft} disabled={saving}
+              className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50">
+              <X size={13} /> Reject
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pending notice for non-approvers ── */}
+      {hasPendingDraft && !canApprove && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-4 py-3 flex items-center gap-2.5">
+          <Clock size={15} className="text-amber-500 flex-shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            Your proposal for <span className="font-bold">{year}</span> is awaiting owner approval.
+          </p>
+        </div>
+      )}
+
+      {/* ── Approved list (live) ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Star size={14} className="text-amber-500" />
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">Approved Holidays — {year}</h3>
+          </div>
+          <span className="text-xs text-slate-400">{approvedHolidays.length}/12</span>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+          {approvedHolidays.map(h => {
+            const isEditing = canApprove && editingApprovedDate === h.date;
+            const f = fmtDate(h.date);
+            return (
+              <div key={h.date} className="flex items-center gap-3 px-4 py-2.5">
+                <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
+                {isEditing ? (
+                  inlineEditRow(editApprovedDate, setEditApprovedDate, editApprovedName, setEditApprovedName,
+                    saveApprovedEdit, () => setEditingApprovedDate(null), year)
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{f.display}</span>
+                      {h.name
+                        ? <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{h.name}</span>
+                        : canApprove && <span className="ml-2 text-xs text-slate-300 dark:text-slate-600 italic">no name</span>
+                      }
+                    </div>
+                    <span className="text-xs text-slate-400">{f.weekday}</span>
+                    <span className="text-[10px] text-slate-300 dark:text-slate-600">{h.date}</span>
+                    {canApprove && (
+                      <button onClick={() => startApprovedEdit(h)}
+                        className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
+                        <Edit2 size={12} />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+          {!approvedHolidays.length && (
+            <div className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">No approved holidays for {year}</div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Draft editor ── */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+            {canApprove ? 'Edit & Approve' : 'Propose Changes'} — {year}
+          </h3>
+          <span className="text-xs text-slate-400">{draftHolidays.length}/12</span>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+          {draftHolidays.map(h => {
+            const isEditing = editingDraftDate === h.date;
+            const f = fmtDate(h.date);
+            const isNew = !approvedDateStrs.includes(h.date);
+            return (
+              <div key={h.date} className={`flex items-center gap-3 px-4 py-2.5 ${isNew ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isNew ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                {isEditing ? (
+                  inlineEditRow(editDraftDate, setEditDraftDate, editDraftName, setEditDraftName,
+                    saveDraftEdit, () => setEditingDraftDate(null), year)
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{f.display}</span>
+                      {h.name
+                        ? <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{h.name}</span>
+                        : <span className="ml-2 text-xs text-slate-300 dark:text-slate-600 italic">no name</span>
+                      }
+                    </div>
+                    <span className="text-xs text-slate-400">{f.weekday}</span>
+                    {isNew && <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">New</span>}
+                    <button onClick={() => startDraftEdit(h)}
+                      className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors">
+                      <Edit2 size={12} />
+                    </button>
+                    <button onClick={() => removeHoliday(h.date)}
+                      className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+          {!draftHolidays.length && (
+            <div className="px-4 py-6 text-center text-slate-400 dark:text-slate-500 text-sm">No dates in draft</div>
+          )}
+        </div>
+
+        {draftHolidays.length < 12 ? (
+          <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-700 space-y-2">
+            <div className="flex gap-2">
+              <input type="date" className={inp('w-36 flex-shrink-0')} value={dateInput}
+                min={`${year}-01-01`} max={`${year}-12-31`} onChange={e => setDateInput(e.target.value)} />
+              <input type="text" className={inp('flex-1 min-w-0')} placeholder="Holiday name (e.g. Republic Day)"
+                value={nameInput} onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addHoliday()} />
+            </div>
+            <button onClick={addHoliday} disabled={!dateInput}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-50">
+              <Plus size={14} /> Add Holiday
+            </button>
+          </div>
+        ) : (
+          <p className="px-4 py-2 text-xs text-amber-600 dark:text-amber-400 border-t border-slate-100 dark:border-slate-700">
+            Max 12 holidays reached.
+          </p>
+        )}
+
+        <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
+          {canApprove ? (
+            <button onClick={handleSaveApproved} disabled={saving}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+              Save & Approve
+            </button>
+          ) : (
+            <button onClick={handlePropose} disabled={saving}
+              className="w-full py-2.5 bg-slate-800 dark:bg-slate-600 hover:bg-slate-700 dark:hover:bg-slate-500 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+              Submit for Approval
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AttendancePayroll({ user, perms = {} }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1179,7 +1570,7 @@ export default function AttendancePayroll({ user, perms = {} }) {
   const [attendance, setAttendance] = useState({});
   const [advances, setAdvances] = useState([]);
   const [salaries, setSalaries] = useState([]);
-  const [settings, setSettings] = useState({ lateDeductFraction: 0.25, leftEarlyDeductFraction: 0.25 });
+  const [settings, setSettings] = useState({ lateDeductFraction: 0.25, leftEarlyDeductFraction: 0.25, holidays: {} });
   const [loadingEmp, setLoadingEmp] = useState(true);
 
   // Employees & settings listener (persistent)
@@ -1235,6 +1626,7 @@ export default function AttendancePayroll({ user, perms = {} }) {
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     ...(perms['employee.advances'] ? [{ id: 'advances', label: 'Advances', icon: CreditCard }] : []),
     ...(perms['payroll.view'] ? [{ id: 'salary', label: 'Salary', icon: DollarSign }] : []),
+    ...((perms['employee.addEdit'] || perms['payroll.view']) ? [{ id: 'holidays', label: 'Holidays', icon: Star }] : []),
   ];
 
   return (
@@ -1274,7 +1666,12 @@ export default function AttendancePayroll({ user, perms = {} }) {
             <EmployeeTab employees={employees} perms={perms} />
           )}
           {activeTab === 'attendance' && (
-            <AttendanceTab employees={employees} attendance={attendance} selectedMonth={selectedMonth} />
+            <AttendanceTab
+              employees={employees}
+              attendance={attendance}
+              selectedMonth={selectedMonth}
+              holidays={toDateStrings(settings.holidays?.[String(parseYM(selectedMonth).year)])}
+            />
           )}
           {activeTab === 'advances' && perms['employee.advances'] && (
             <AdvanceTab employees={employees} advances={advances} />
@@ -1288,6 +1685,14 @@ export default function AttendancePayroll({ user, perms = {} }) {
               selectedMonth={selectedMonth}
               settings={settings}
               onSaveSettings={handleSaveSettings}
+            />
+          )}
+          {activeTab === 'holidays' && (perms['employee.addEdit'] || perms['payroll.view']) && (
+            <HolidaysTab
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
+              user={user}
+              canApprove={!!perms['employee.addEdit']}
             />
           )}
         </>

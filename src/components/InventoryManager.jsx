@@ -13,7 +13,7 @@ const InventoryManager = ({ user, transactions = [], exchangeRate = 1, perms = {
     // Default State
     const [newItem, setNewItem] = React.useState({
         type: 'module', brand: '', series: '', model: '', vendor: '', pitch: '',
-        width: '', height: '', length: '', size: '',
+        width: '', height: '', moduleWidth: '', moduleHeight: '', length: '', size: '',
         price: '', carriage: '', currency: 'INR', indoor: true,
         brightness: '', refreshRate: '',
         ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
@@ -111,6 +111,8 @@ const InventoryManager = ({ user, transactions = [], exchangeRate = 1, perms = {
                 brand: newItem.brand || '', // Allow empty brand
                 width: Number(newItem.width || 0),
                 height: Number(newItem.height || 0),
+                moduleWidth: Number(newItem.moduleWidth || 0),
+                moduleHeight: Number(newItem.moduleHeight || 0),
                 length: Number(newItem.length || 0),
                 price: Number(newItem.price || 0),
                 carriage: Number(newItem.carriage || 0),
@@ -144,7 +146,7 @@ const InventoryManager = ({ user, transactions = [], exchangeRate = 1, perms = {
                 setNewItem({
                     type: newItem.type,
                     brand: '', series: '', model: '', vendor: '', pitch: '',
-                    width: '', height: '', length: '', size: '',
+                    width: '', height: '', moduleWidth: '', moduleHeight: '', length: '', size: '',
                     price: '', carriage: '', currency: 'INR', indoor: true,
                     brightness: '', refreshRate: '',
                     ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
@@ -178,7 +180,7 @@ const InventoryManager = ({ user, transactions = [], exchangeRate = 1, perms = {
         setShowForm(false);
         setNewItem({
             type: 'module', brand: '', series: '', model: '', vendor: '', pitch: '',
-            width: '', height: '', length: '', size: '',
+            width: '', height: '', moduleWidth: '', moduleHeight: '', length: '', size: '',
             price: '', carriage: '', currency: 'INR', indoor: true,
             brightness: '', refreshRate: '',
             ledType: '', lampMake: '', material: '', weight: '', avgPower: '', maxPower: '',
@@ -399,8 +401,15 @@ const InventoryManager = ({ user, transactions = [], exchangeRate = 1, perms = {
                             <input placeholder="LED Type (e.g. SMD2121)" className={inputCls} value={newItem.ledType} onChange={e => setNewItem({ ...newItem, ledType: e.target.value })} />
                             <input placeholder="Lamp Make" className={inputCls} value={newItem.lampMake} onChange={e => setNewItem({ ...newItem, lampMake: e.target.value })} />
 
-                            <input placeholder="Width (mm)*" type="number" className={inputCls} value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
-                            <input placeholder="Height (mm)*" type="number" className={inputCls} value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
+                            <input placeholder={newItem.type === 'ready' ? "Cabinet W (mm)*" : "Width (mm)*"} type="number" className={inputCls} value={newItem.width} onChange={e => setNewItem({ ...newItem, width: e.target.value })} />
+                            <input placeholder={newItem.type === 'ready' ? "Cabinet H (mm)*" : "Height (mm)*"} type="number" className={inputCls} value={newItem.height} onChange={e => setNewItem({ ...newItem, height: e.target.value })} />
+
+                            {newItem.type === 'ready' && (
+                                <>
+                                    <input placeholder="Module W (mm)*" type="number" className={inputCls + " border-purple-400 ring-1 ring-purple-300"} value={newItem.moduleWidth} onChange={e => setNewItem({ ...newItem, moduleWidth: e.target.value })} />
+                                    <input placeholder="Module H (mm)*" type="number" className={inputCls + " border-purple-400 ring-1 ring-purple-300"} value={newItem.moduleHeight} onChange={e => setNewItem({ ...newItem, moduleHeight: e.target.value })} />
+                                </>
+                            )}
 
                             <input placeholder="Brightness (nits)*" type="number" className={inputCls} value={newItem.brightness} onChange={e => setNewItem({ ...newItem, brightness: e.target.value })} />
                             <input placeholder="Refresh Rate (Hz)*" type="number" className={inputCls} value={newItem.refreshRate} onChange={e => setNewItem({ ...newItem, refreshRate: e.target.value })} />
